@@ -57,26 +57,26 @@ The contract scales almost perfectly: the amount of stakers has no influence on 
 
 This is an example where each line happens some time after the previous line:
 
-- User1 stakes 100
-- User2 stakes 400
-- Staking period starts with 1000 rewards. Total stakes: 500
-- User3 stakes 200. This is valid only for the next staking period
+- User1 stakes `100`
+- User2 stakes `400`
+- Staking period starts with `1000` rewards. Total stakes: `500`
+- User3 stakes `200`. This is valid only for the next staking period
 - Staking period ends
-- User2 withdraws rewards: he gets 400/500 \* 1000 = 800 rewards
+- User2 withdraws rewards: he gets `400/500 * 1000 = 800` rewards
 - User2 unstakes his tokens
-- Second staking period starts with 1500 rewards. Total stakes: 300
+- Second staking period starts with `1500` rewards. Total stakes: `300`
 - User3 withdraws rewards: he gets nothing, since the staking period is ongoing
 - Second staking period ends
-- User1 withdraws rewards: he gets (100/500 _ 1000) + (100/300 _ 1500) = 200 + 500 = 700 rewards
-- User3 withdraws rewards: he gets (200/300 \* 1500) = 1000 rewards
+- User1 withdraws rewards: he gets `(100/500 * 1000) + (100/300 * 1500) = 200 + 500 = 700` rewards
+- User3 withdraws rewards: he gets `(200/300 * 1500) = 1000` rewards
 
 ## Weighted example
 
 This is an example which uses different weights for users (when a user locks his stake for a longer period):
 
-- User1 stakes for a year and gets 50% bonus. He stakes 100, but is given a weight of 150
-- User2 stakes 350 with no bonuses
-- Staking period starts with 1000 rewards. Total (weighted) stakes: 500
+- User1 stakes for a year and gets 50% bonus. He stakes `100`, but is given a weight of `150`
+- User2 stakes `350` with no bonuses
+- Staking period starts with `1000` rewards. Total (weighted) stakes: `500`
 - Staking period ends
-- User2 withdraws rewards: he gets 350/500 \* 1000 = 700 rewards
-- User1 withdraws rewards: he gets 150/500 \* 1000 = 300 rewards
+- User2 withdraws rewards: he gets `350/500 * 1000 = 700` rewards
+- User1 withdraws rewards: he gets `150/500 * 1000 = 300` rewards
