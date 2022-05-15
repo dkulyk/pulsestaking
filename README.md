@@ -44,6 +44,10 @@ When user enters a stake, the staking amount is added for the upcoming staking p
 
 It is possible for users to gain bigger rewards for their stakes if they lock the stake for a longer period. In that case the weighted amount is added to the total stakes. Locked stakes can only be unstaked after the lock period has ended.
 
+## Scalability
+
+The contract scales almost perfectly: the amount of stakers has no influence on how much gas is required for reward calculations. The only minor scalability issue is that rewards need to be calculated for each past staking period: in theory user can have an unlimited amount of past staking period for which his rewards need to be calculated when withdrawing rewards. In reality, if the staking period is 1 month, there are probably a maximum of a few dozes staking periods for any user, which shouldn't be an issue gas-wise.
+
 ## Possible issues
 
 - The reward ratio for a staking period is known only once the period has ended, because the rewards for the staking period are accummulated in the contract only during the period. So, in theory, it's possible users get 0% rewards for a staking period if nobody enters rewards.
