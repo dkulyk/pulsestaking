@@ -5,9 +5,9 @@
 - Staking: user can insert stake whenever, for whatever amount. The staking asset is an ERC20 token. The stake is valid for the next staking period (and periods after that)
 - Unstaking: user can unstake whenever. TODO: undecided whether can unstake an arbitrary amount (and when)
 - Withdraw: user can withdraw accrued rewards whenever. No rewards are ever lost
-- Enter rewards: anyone can enter rewards, which are distributed for the stakers
+- Enter rewards: anyone can enter rewards, which are distributed for the stakers for the current staking period
 
-TODO: Is certain admin functionality needed, for example to change the staking period length?
+TODO: Is some sort of admin functionality needed?
 
 ## Concepts
 
@@ -15,7 +15,7 @@ TODO: Is certain admin functionality needed, for example to change the staking p
 
 Before a staking period starts:
 
-- Users can enter stakes for the upcoming staking period
+- Users can enter stakes for any amount of staking periods
 
 During a staking period:
 
@@ -28,19 +28,21 @@ After a staking period has ended:
 
 #### Staking
 
-User can enter stakes whenever, but they only count for the next starting staking period.
+User can enter stakes whenever, but they only count for the next starting staking period. When staking, the user has to choose the amount of periods he wants to lock the stake for: the longer he stakes for, the better weight he gets for his stake.
+
+User always has only (at maximum) one stake which he can increase or decrease. The change takes effect only for the next staking period. Locked stakes can only be removed once the lock has been lifted.
 
 TODO: Unstaking: when can user unstake and which assets?
 
 ### Starting and ending a staking period
 
-Any user who interacts with the contract will trigger a staking period start and/or end, if such is needed based on the blockchain's timestamp.
+Any user who interacts with the contract will trigger a staking period start and/or end, if such is needed based on the blockchain's timestamp. TODO: figure out exactly how this works
 
 In theory, this means that a staking period may not be explicitly closed at the right time, but it may continue until any user interacts with the contract. TODO: figure out if this causes problems somewhere
 
 ## Calculating rewards
 
-When user enters a stake, the staking amount is added for the upcoming staking period's total stake amount. At the end of the staking period, the user's share of the total stakes is calculated and his share of the staking period reward is calculated.
+When user enters a stake, the staking amount is added to the total staking amount of all of the chosen staking periods. When user chooses to withdraw rewards, his rewards are calculated based on all the previous staking periods in which he participated.
 
 It is possible for users to gain bigger rewards for their stakes if they lock the stake for a longer period. In that case the weighted amount is added to the total stakes. Locked stakes can only be unstaked after the lock period has ended.
 
@@ -52,6 +54,7 @@ The contract scales almost perfectly: the amount of stakers has no influence on 
 
 - The reward ratio for a staking period is known only once the period has ended, because the rewards for the staking period are accummulated in the contract only during the period. So, in theory, it's possible users get 0% rewards for a staking period if nobody enters rewards.
   - If this is an issue, the rewards could always be for the _next_ staking period, but this makes the logic a bit more complicated and allows users to try to game the system
+- It is not possible to change the duration of the staking period since users are already committed for a certain amount of staking periods and expect the staking periods to be of certain length.
 
 ## Simple example
 
