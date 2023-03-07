@@ -1,6 +1,8 @@
 # Staking functionality for Pulse project
 
-There will be two contracts: the staking contract and a separate conversion contract
+There will be two contracts: the staking contract and a separate conversion contract.
+
+The staking contract will be based on the staking contract by Synthetix (https://github.com/Synthetixio/synthetix/blob/c53070db9a93e5717ca7f74fcaf3922e991fb71b/contracts/StakingRewards.sol). The contract will be kept as close to the original as possible.
 
 ## Conversion contract
 
