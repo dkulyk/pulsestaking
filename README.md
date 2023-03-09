@@ -59,11 +59,6 @@ To deploy the contract the following information is needed:
 
 ### Possible issues
 
-- If new rewards are input into the contract all the time, the staking period never ends since it is extended all the time. This shouldn't be a big issue, but it means the staking period can never be changed - since it can be changed only when a staking period is not active.
-  - Possible mitigation version 1 (easy): Have a way of controlling when rewards are input. Preferably by doing it manually.
-  - Possible mitigation verison 2 (harder): Have an intermediary contract which forwards rewards until it's paused
-  - In any case, the marketplace contract should probably not be sending rewards directly to the staking contract, since then you have no control of 1) when the rewards are sent
-
 #### Don't send rewards directly
 
 The marketplace contract should not be sending rewards directly to the staking contract because if you do, then:
@@ -83,7 +78,7 @@ Mitigation suggestion 4: something else? Ideas?
 ### Changes needed for the original Synthetix contract
 
 1. Add functionality to be able to stake on behalf of someone else. This is needed to enable the conversion contract to stake on behalf of a user.
-1. Other possible changes will depend on how well the original Synthetix contract suits the client's needs.
+1. Other possible changes depend on how well the original Synthetix contract suits the client's needs.
 
 
 
