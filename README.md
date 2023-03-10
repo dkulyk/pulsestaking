@@ -6,11 +6,11 @@ The staking contract will be based on the staking contract by Synthetix (https:/
 
 ## Conversion contract
 
-We will implement a separate contract which is in charge of converting the blockchain's native asset into staking ERC20 tokens.
+We will implement a separate contract which is in charge of converting the blockchain's native asset into reward ERC20 tokens.
 
-Whenever native assets are input to the contract it automatically converts it to the staking token and sends to the staking to increase stake for the user.
+Whenever native assets are input to the contract it automatically converts it to the reward token and sends to the staking contract to increase the reward.
 
-For the purpose of this project it is assumed that the staking token is a wrapped token which can be obtained by depositing native asset to a specific wrapper contract and getting the wrapped token in return. No real trading or anything like will be implemented.
+For the purpose of this project it is assumed that the reward token is a wrapped token which can be obtained by depositing native asset to a specific wrapper contract and getting the wrapped token in return. No real trading or anything like will be implemented.
 
 ## Staking contract
 
@@ -51,7 +51,7 @@ You can learn about the algorithm in this awesome video series: https://www.yout
 To deploy the contract the following information is needed:
 1. Deployment parameters:
   1. Owner address
-  1. Which address is allowed to add reward tokens to the contract
+  1. Which address is allowed to add reward tokens to the contract. This should be the 'conversion' contract so it can add rewards.
   1. Which address is the reward token
   1. Which address is the staking token
 1. Contract static parameters:
@@ -69,16 +69,25 @@ The marketplace contract should not be sending rewards directly to the staking c
 
 Mitigation suggestion 1: have a separate (multisig?) wallet which sends the reward tokens manually once a week. Not ideal, since requires manual work
 
-Mitigation suggestion 2: have a separate reward contract which controls when reward tokens are sent and which you can control. Not ideal because: A) requires extra development work and B) still requires some manual work, since somebody has to tell the reward contract to send the tokens once a week (so not much better than the previous suggestion)
+Mitigation suggestion 2: use the conversion contract to reroute all rewards. You can control this contract to stop sending if needed. Not ideal because: A) still requires some manual work, since somebody has to tell the reward contract to send the tokens once a week (so not much better than the previous suggestion)
 
 Mitigation suggestion 3: Use suggestion 1 or 2, but extend the staking period length to one month or maybe even a few months. Benefits: A) There are less variables when frontend calculates expected rewards, since the distributed reward amount in a staking period is static. Only the amount of users will change during a staking period. B) Manual work needs to be done a lot less often. Minor downside: You can only change the staking period length while there is no active staking period, so if you wanted to change it you'd have to wait longer.
   
-Mitigation suggestion 4: something else? Ideas?
+Mitigation suggestion 4: similar to suggestion 2, but anyone can flush the rewards at any point.
+
+#### Which address should have the access to deposit rewards to the staking contract
+
+This is related to the previous issue.
+
+As far as I've understood, rewards should come both from the conversion contract and from the marketplace directly (depending on the result of the previous issue). The staking contract only supports one address.
+
+Mitigation suggestion 1: Change the logic to support two addresses, so both the marketplace and the conversion contract can deposit rewards.
+
+Mitigation suggestion 2: Route all rewards through the conversion contract.
 
 ### Changes needed for the original Synthetix contract
 
-1. Add functionality to be able to stake on behalf of someone else. This is needed to enable the conversion contract to stake on behalf of a user.
-1. Other possible changes depend on how well the original Synthetix contract suits the client's needs.
+1. Possible changes depend on how well the original Synthetix contract suits the client's needs.
 
 
 
