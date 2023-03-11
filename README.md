@@ -10,7 +10,7 @@ We will implement a separate contract which is in charge of converting the block
 
 Whenever native assets are input to the contract it automatically converts it to the reward token and sends to the staking contract to increase the reward.
 
-For the purpose of this project it is assumed that the reward token is a wrapped token which can be obtained by depositing native asset to a specific wrapper contract and getting the wrapped token in return. No real trading or anything like will be implemented.
+For the purpose of this project it is assumed that the reward token is a wrapped token which can be obtained by depositing native asset to a specific wrapper contract and getting the wrapped token in return. It is assumed that an address is available for the wrapped token. No real trading or anything like that will be implemented.
 
 ### Functionality:
 
