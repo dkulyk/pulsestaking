@@ -12,6 +12,13 @@ Whenever native assets are input to the contract it automatically converts it to
 
 For the purpose of this project it is assumed that the reward token is a wrapped token which can be obtained by depositing native asset to a specific wrapper contract and getting the wrapped token in return. No real trading or anything like will be implemented.
 
+### Functionality:
+
+- Whenever native assets are sent to this contract, the assets are converted to a wrapped version (also called the reward token) and kept in this contract
+- Function to flush all reward tokens in the contract to the staking contract. This also notifies the staking contract of the new rewards. This is callable by anyone
+- Reward tokens are sent to this contract from the marketplace contract
+- No other functionality: no owners, no special access, nothing more
+
 ## Staking contract
 
 ### Original Synthetix features 
