@@ -55,7 +55,7 @@ To deploy the contract the following information is needed:
   1. Which address is the reward token
   1. Which address is the staking token
 1. Contract static parameters:
-  1. Staking duration. The default is 7 days. 
+  1. Staking period duration. The default is 7 days. 
 
 ### Possible issues
 
@@ -65,25 +65,15 @@ The marketplace contract should not be sending rewards directly to the staking c
 - The marketplace contract would need extra functionality to inform the staking contract that new reward tokens are now available to it. Simply sending the tokens isn't enough
 - You have no control over when the rewards are sent (or to be more precise: when the staking contract is notified of new rewards)
 - You would have no way of redirecting some of the reward tokens anywhere else (although this may be a good thing also) if that's desired at some point
-- The staking contract's staking period would never end, since the period is always extended when new tokens are received. This wouldn't hurt staking rewards, but the owner would not be able to change the reward duration ever, since it can only be done when there is no active staking period
+- The staking contract's staking period would never end, since the period is always extended when new tokens are received. This wouldn't hurt staking rewards, but the owner would not be able to change the reward duration ever, since it can only be done when there is no active staking period. This may not be an issue at all.
 
-Mitigation suggestion 1: have a separate (multisig?) wallet which sends the reward tokens manually once a week. Not ideal, since requires manual work
+Mitigation suggestion: use the conversion contract for relaying all rewards to the staking contract. To be decided: can anyone flush the rewards or only some certain address?
 
-Mitigation suggestion 2: use the conversion contract to reroute all rewards. You can control this contract to stop sending if needed. Not ideal because: A) still requires some manual work, since somebody has to tell the reward contract to send the tokens once a week (so not much better than the previous suggestion)
+#### Staking period never ends
 
-Mitigation suggestion 3: Use suggestion 1 or 2, but extend the staking period length to one month or maybe even a few months. Benefits: A) There are less variables when frontend calculates expected rewards, since the distributed reward amount in a staking period is static. Only the amount of users will change during a staking period. B) Manual work needs to be done a lot less often. Minor downside: You can only change the staking period length while there is no active staking period, so if you wanted to change it you'd have to wait longer.
-  
-Mitigation suggestion 4: similar to suggestion 2, but anyone can flush the rewards at any point.
+If you don't control when the rewards are sent to the staking contract, its staking period probably never ends, since each time new rewards are input the staking period restarts.
 
-#### Which address should have the access to deposit rewards to the staking contract
-
-This is related to the previous issue.
-
-As far as I've understood, rewards should come both from the conversion contract and from the marketplace directly (depending on the result of the previous issue). The staking contract only supports one address.
-
-Mitigation suggestion 1: Change the logic to support two addresses, so both the marketplace and the conversion contract can deposit rewards.
-
-Mitigation suggestion 2: Route all rewards through the conversion contract.
+The only problem with a never ending staking period is that the staking period length can only be changed if there is no active staking period. This may not be a problem at all.
 
 ### Changes needed for the original Synthetix contract
 
