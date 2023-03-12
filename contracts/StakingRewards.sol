@@ -5,11 +5,10 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 // Inheritance
-import "./interfaces/IStakingRewards.sol";
 import "./RewardsDistributionRecipient.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/stakingrewards
-contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, ReentrancyGuard {
+contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /* ========== STATE VARIABLES ========== */
@@ -34,7 +33,7 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
         address _rewardsDistribution,
         address _rewardsToken,
         address _stakingToken
-    ) public {
+    ) {
         rewardsToken = IERC20(_rewardsToken);
         stakingToken = IERC20(_stakingToken);
         rewardsDistribution = _rewardsDistribution;
@@ -60,13 +59,13 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
         }
         return
             rewardPerTokenStored +
-                (lastTimeRewardApplicable() - lastUpdateTime * rewardRate * 1e18 / _totalSupply)
+                ((lastTimeRewardApplicable() - lastUpdateTime) * rewardRate * 1e18 / _totalSupply)
                 //lastTimeRewardApplicable().sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(_totalSupply)
             ;
     }
 
     function earned(address account) public view returns (uint256) {
-        return _balances[account] * (rewardPerToken() - userRewardPerTokenPaid[account]) / 1e18 + rewards[account];
+        return (_balances[account] * (rewardPerToken() - userRewardPerTokenPaid[account])) / 1e18 + rewards[account];
         //return _balances[account].mul(rewardPerToken().sub(userRewardPerTokenPaid[account])).div(1e18).add(rewards[account]);
     }
 
