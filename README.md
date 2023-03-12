@@ -43,7 +43,7 @@ For the purpose of this project it is assumed that the reward token is a wrapped
 
 The staking period is an internal construct, and is typically not visible for the end users in any way. By default the staking period is 7 days.
 
-A staking period starts by the owner (or, to be more precise, a *reward distributer*) entering rewards into the contract. Starting from that point onwards the stakers accumulate rewards. All the input rewards are distributed during that staking period. Once the staking period ends, nobody accumulates rewards until a new period is started explicitly by entering more rewards. Also more rewards can be added during a staking period, and those are distributed fairly to stakers.
+A staking period starts by a *reward distributer* entering rewards into the contract. Starting from that point onwards the stakers accumulate rewards. All the input rewards are distributed during that staking period. Once the staking period ends, nobody accumulates rewards until a new period is started explicitly by entering more rewards. Also more rewards can be added during a staking period, and those are distributed fairly to stakers.
 
 When a user stakes he does not stake for any staking period but from the user's perspective the staking period is open ended. User only decides how many tokens he wants to stake and he can unstake whenever he wants to. He participates in whatever internal staking periods are ongoing during his staking. In the worst case, especially if the user stakes only for a very short period, he may not get any rewards if there is no active staking period.
 
@@ -84,7 +84,9 @@ The only problem with a never ending staking period is that the staking period l
 
 ### Changes needed for the original Synthetix contract
 
-1. Possible changes depend on how well the original Synthetix contract suits the client's needs.
-
-
-
+1. Remove all owner-related functionality:
+  1. Pausing staking
+  1. Changing staking period duration
+  1. Recovery of arbitrary ERC20 tokens
+  1. The concept of owner
+1. Possible other changes depend on how well the original Synthetix contract suits the client's needs.
