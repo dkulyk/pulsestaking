@@ -28,16 +28,13 @@ async function main() {
   }
 
   const StakingFactory = await ethers.getContractFactory("StakingRewards");
-  const ERC20Factory = await ethers.getContractFactory("ERC20");
-  const WETHFactory = await ethers.getContractFactory("WETH");
+  const ERC20Factory = await ethers.getContractFactory("MockERC20");
+  const WETHFactory = await ethers.getContractFactory("MockWETH");
 
   const rewardsDistributor = deployer.address;
 
   const _rewardsToken = await WETHFactory.connect(deployer).deploy();
-  const _stakingToken = await ERC20Factory.connect(deployer).deploy(
-    "name",
-    "symbol"
-  );
+  const _stakingToken = await ERC20Factory.connect(deployer).deploy();
 
   const _staking = await StakingFactory.connect(deployer).deploy(
     rewardsDistributor,
@@ -61,7 +58,7 @@ async function main() {
     ]);
 
     await verify(_rewardsToken.address, []);
-    await verify(_stakingToken.address, ["name", "symbol"]);
+    await verify(_stakingToken.address, []);
 
     if (fs.existsSync(addressFile)) {
       fs.rmSync(addressFile);
