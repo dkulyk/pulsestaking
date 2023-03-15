@@ -84,12 +84,11 @@ The only problem with a never ending staking period is that the staking period l
 
 ### Changes needed for the original Synthetix contract
 
-1. Remove all owner-related functionality:
-  1. Pausing staking
-  1. Changing staking period duration
-  1. Recovery of arbitrary ERC20 tokens
-  1. The concept of owner
-1. Possible other changes depend on how well the original Synthetix contract suits the client's needs.
+1. Removed all owner-related functionality:
+    1. Pausing staking
+    1. Changing staking period duration
+    1. Recovery of arbitrary ERC20 tokens
+    1. The concept of owner
 1. Upgraded used OpenZeppelin contract versions
 1. Started using Solidity version 0.8.19
 1. Removed the use of SafeMath (no longer needed with new Solidity)
