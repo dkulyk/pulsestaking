@@ -34,9 +34,16 @@ async function main() {
   const rewardsDistributor = deployer.address;
 
   const _rewardsToken = await WETHFactory.connect(deployer).deploy();
-  const _stakingToken = await ERC20Factory.connect(deployer).deploy("name", "symbol");
+  const _stakingToken = await ERC20Factory.connect(deployer).deploy(
+    "name",
+    "symbol"
+  );
 
-  const _staking = await StakingFactory.connect(deployer).deploy(rewardsDistributor, _rewardsToken.address, _stakingToken.address);  
+  const _staking = await StakingFactory.connect(deployer).deploy(
+    rewardsDistributor,
+    _rewardsToken.address,
+    _stakingToken.address
+  );
 
   await _rewardsToken.deployed();
   await _stakingToken.deployed();
@@ -47,10 +54,14 @@ async function main() {
     // Wait for the contracts to be propagated inside Etherscan
     await new Promise((f) => setTimeout(f, 60000));
 
-    await verify(_staking.address, [rewardsDistributor, rewardsToken, stakingToken]);
+    await verify(_staking.address, [
+      rewardsDistributor,
+      _rewardsToken.address,
+      _stakingToken.address,
+    ]);
 
-   /*  await verify(_wallet.address, []);
-    await verify(_manager.address, [xenAddress, _wallet.address, feeReceiver]); */
+    await verify(_rewardsToken.address, []);
+    await verify(_stakingToken.address, ["name", "symbol"]);
 
     if (fs.existsSync(addressFile)) {
       fs.rmSync(addressFile);
@@ -68,15 +79,15 @@ async function main() {
       );
     };
 
-/*     writeAddr(_manager.address, "Wallet manager");
-    writeAddr(xenAddress, "XENCrypto");
-    writeAddr(_wallet.address, "Initial wallet");
-    writeAddr(_xelToken, "XEL token");
-    writeAddr(_math.address, "Math library"); */
+    writeAddr(_staking.address, "Staking contract");
+    writeAddr(_rewardsToken.address, "Rewards token");
+    writeAddr(_stakingToken.address, "Staking token");
   }
 
   console.log("Deployments done");
-  console.log(`Staking contract: ${_staking.address}, Staking token: ${_stakingToken.address}, Rewards token: ${_rewardsToken.address}`);
+  console.log(
+    `Staking contract: ${_staking.address}, Staking token: ${_stakingToken.address}, Rewards token: ${_rewardsToken.address}`
+  );
 }
 
 // We recommend this pattern to be able to use async/await everywhere
@@ -85,4 +96,3 @@ main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
-
