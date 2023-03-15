@@ -28,12 +28,18 @@ async function main() {
   }
 
   const StakingFactory = await ethers.getContractFactory("StakingRewards");
+  const ERC20Factory = await ethers.getContractFactory("ERC20");
+  const WETHFactory = await ethers.getContractFactory("WETH");
 
   const rewardsDistributor = deployer.address;
-  const rewardsToken = deployer.address;
-  const stakingToken = deployer.address;
 
-  const _staking = await StakingFactory.connect(deployer).deploy(rewardsDistributor, rewardsToken, stakingToken);
+  const _rewardsToken = await WETHFactory.connect(deployer).deploy();
+  const _stakingToken = await ERC20Factory.connect(deployer).deploy("name", "symbol");
+
+  const _staking = await StakingFactory.connect(deployer).deploy(rewardsDistributor, _rewardsToken.address, _stakingToken.address);  
+
+  await _rewardsToken.deployed();
+  await _stakingToken.deployed();
   await _staking.deployed();
 
   if (network.name != "localhost" && network.name != "hardhat") {
@@ -70,7 +76,7 @@ async function main() {
   }
 
   console.log("Deployments done");
-  console.log(`Staking contract: ${_staking.address}, Staking token: ${stakingToken}, Rewards token: ${rewardsToken}`);
+  console.log(`Staking contract: ${_staking.address}, Staking token: ${_stakingToken.address}, Rewards token: ${_rewardsToken.address}`);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
