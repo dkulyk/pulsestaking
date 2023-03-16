@@ -13,9 +13,8 @@ contract Converter {
     }
 
     function setStakingContract(address _staking) public {
-        if (address(staking) == address(0x0)) {
-            staking = StakingRewards(_staking);
-        }
+        require(address(staking) == address(0x0), "Already set");
+        staking = StakingRewards(_staking);
     }
 
     function deposit() public payable {

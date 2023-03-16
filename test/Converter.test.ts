@@ -39,8 +39,6 @@ describe("Voting", function () {
     await _staking.deployed();
     await _converter.deployed();
 
-    await _converter.setStakingContract(_staking.address);
-
     return { _deployer, _rewardsToken, _stakingToken, _staking, _converter };
   }
 
@@ -60,11 +58,63 @@ describe("Voting", function () {
       const setStaking = await converterContract.staking();
       const setRewards = await converterContract.rewardsToken();
 
-      expect(setStaking).to.equal(stakingContract.address);
+      expect(setStaking).to.equal(ethers.constants.AddressZero);
       expect(setRewards).to.equal(rewardsToken.address);
-      /*       expect(await votingContract.isVoter(voter1.address)).to.true;
-      expect(await votingContract.isVoter(voter2.address)).to.true;
-      expect(await votingContract.isVoter(voter3.address)).to.true; */
+    });
+  });
+
+  describe("Setting staking contract", async function () {
+    it("Works", async function () {
+      await converterContract.setStakingContract(stakingContract.address);
+
+      const setStaking = await converterContract.staking();
+
+      expect(setStaking).to.equal(stakingContract.address);
+    });
+
+    it("Fails if trying to reset", async function () {
+      await converterContract.setStakingContract(stakingContract.address);
+      await expect(
+        converterContract.setStakingContract(deployer.address)
+      ).to.be.revertedWith("Already set");
+      await expect(
+        converterContract.setStakingContract(stakingContract.address)
+      ).to.be.revertedWith("Already set");
+    });
+  });
+
+  describe("Deposit", async function () {
+    beforeEach(async function () {
+      await converterContract.setStakingContract(stakingContract.address);
+    });
+
+    it("Works", async function () {
+      await converterContract.deposit({ value: 1 });
+
+      const nativeBalance = await ethers.provider.getBalance(
+        converterContract.address
+      );
+      const rewardBalance = await rewardsToken.balanceOf(
+        converterContract.address
+      );
+
+      expect(nativeBalance).to.be.equal(0);
+      expect(rewardBalance).to.be.equal(1);
+    });
+
+    it("Works for subsequent deposits", async function () {
+      await converterContract.deposit({ value: 1 });
+      await converterContract.deposit({ value: 10 });
+
+      const nativeBalance = await ethers.provider.getBalance(
+        converterContract.address
+      );
+      const rewardBalance = await rewardsToken.balanceOf(
+        converterContract.address
+      );
+
+      expect(nativeBalance).to.be.equal(0);
+      expect(rewardBalance).to.be.equal(11);
     });
   });
 });
