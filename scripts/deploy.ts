@@ -30,6 +30,7 @@ async function main() {
   const StakingFactory = await ethers.getContractFactory("StakingRewards");
   const ERC20Factory = await ethers.getContractFactory("MockERC20");
   const WETHFactory = await ethers.getContractFactory("MockWETH");
+  const ConverterFactory = await ethers.getContractFactory("Converter");
 
   const rewardsDistributor = deployer.address;
 
@@ -42,9 +43,15 @@ async function main() {
     _stakingToken.address
   );
 
+  const _converter = await ConverterFactory.connect(deployer).deploy(
+    _staking.address,
+    _rewardsToken.address
+  );
+
   await _rewardsToken.deployed();
   await _stakingToken.deployed();
   await _staking.deployed();
+  await _converter.deployed();
 
   if (network.name != "localhost" && network.name != "hardhat") {
     console.log("Deployments done, waiting for etherscan verifications");
@@ -59,6 +66,7 @@ async function main() {
 
     await verify(_rewardsToken.address, []);
     await verify(_stakingToken.address, []);
+    await verify(_converter.address, [_staking.address, _rewardsToken.address]);
 
     if (fs.existsSync(addressFile)) {
       fs.rmSync(addressFile);
@@ -79,11 +87,13 @@ async function main() {
     writeAddr(_staking.address, "Staking contract");
     writeAddr(_rewardsToken.address, "Rewards token");
     writeAddr(_stakingToken.address, "Staking token");
+    writeAddr(_converter.address, "Converter contract");
   }
 
   console.log("Deployments done");
   console.log(
-    `Staking contract: ${_staking.address}, Staking token: ${_stakingToken.address}, Rewards token: ${_rewardsToken.address}`
+    `Staking contract: ${_staking.address}, Staking token: ${_stakingToken.address}, 
+    Rewards token: ${_rewardsToken.address}, Converter token: ${_converter.address}`
   );
 }
 
