@@ -32,20 +32,17 @@ async function main() {
   const WETHFactory = await ethers.getContractFactory("MockWETH");
   const ConverterFactory = await ethers.getContractFactory("Converter");
 
-  const rewardsDistributor = deployer.address;
-
   const _rewardsToken = await WETHFactory.connect(deployer).deploy();
   const _stakingToken = await ERC20Factory.connect(deployer).deploy();
 
-  const _staking = await StakingFactory.connect(deployer).deploy(
-    rewardsDistributor,
-    _rewardsToken.address,
-    _stakingToken.address
+  const _converter = await ConverterFactory.connect(deployer).deploy(
+    _rewardsToken.address
   );
 
-  const _converter = await ConverterFactory.connect(deployer).deploy(
-    _staking.address,
-    _rewardsToken.address
+  const _staking = await StakingFactory.connect(deployer).deploy(
+    _converter.address,
+    _rewardsToken.address,
+    _stakingToken.address
   );
 
   await _rewardsToken.deployed();
@@ -53,20 +50,22 @@ async function main() {
   await _staking.deployed();
   await _converter.deployed();
 
+  _converter.setStakingContract(_staking.address);
+
   if (network.name != "localhost" && network.name != "hardhat") {
     console.log("Deployments done, waiting for etherscan verifications");
     // Wait for the contracts to be propagated inside Etherscan
     await new Promise((f) => setTimeout(f, 60000));
 
     await verify(_staking.address, [
-      rewardsDistributor,
+      _converter.address,
       _rewardsToken.address,
       _stakingToken.address,
     ]);
 
     await verify(_rewardsToken.address, []);
     await verify(_stakingToken.address, []);
-    await verify(_converter.address, [_staking.address, _rewardsToken.address]);
+    await verify(_converter.address, [_rewardsToken.address]);
 
     if (fs.existsSync(addressFile)) {
       fs.rmSync(addressFile);

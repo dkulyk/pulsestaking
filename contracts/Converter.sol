@@ -8,9 +8,14 @@ contract Converter {
     StakingRewards public staking;
     IWETH public rewardsToken;
 
-    constructor(address _staking, address _rewardsToken) {
-        staking = StakingRewards(_staking);
+    constructor(address _rewardsToken) {
         rewardsToken = IWETH(payable(_rewardsToken));
+    }
+
+    function setStakingContract(address _staking) public {
+        if (address(staking) == address(0x0)) {
+            staking = StakingRewards(_staking);
+        }
     }
 
     function deposit() public payable {
