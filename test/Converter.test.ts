@@ -3,7 +3,6 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Converter, ERC20, IWETH, StakingRewards } from "../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber } from "ethers";
 
 describe("Converter", function () {
   let stakingContract: StakingRewards;
@@ -81,6 +80,16 @@ describe("Converter", function () {
   describe("Setting staking contract", async function () {
     it("Works", async function () {
       await converterContract.setStakingContract(stakingContract.address);
+
+      const setStaking = await converterContract.staking();
+
+      expect(setStaking).to.equal(stakingContract.address);
+    });
+
+    it("Is callable by anyone", async function () {
+      await converterContract
+        .connect(user1)
+        .setStakingContract(stakingContract.address);
 
       const setStaking = await converterContract.staking();
 
@@ -254,6 +263,22 @@ describe("Converter", function () {
 
     it("Is callable by anyone", async function () {
       await converterContract.connect(user1).flush();
+    });
+
+    it("Flushes everything", async function () {
+      await converterContract.deposit({ value: 1 });
+      await converterContract.deposit({ value: 2 });
+      await converterContract.flush();
+
+      const converterBalance = await rewardsToken.balanceOf(
+        converterContract.address
+      );
+      const stakingBalance = await rewardsToken.balanceOf(
+        stakingContract.address
+      );
+
+      expect(converterBalance).to.be.equal(0);
+      expect(stakingBalance).to.be.equal(3);
     });
 
     it("Works for subsequent flushes", async function () {

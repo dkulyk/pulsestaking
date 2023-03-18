@@ -61,6 +61,7 @@ When a user stakes he does not stake for any staking period but from the user's 
    1. Pausing staking
    1. Changing staking period duration
    1. Recovery of arbitrary ERC20 tokens
+   1. Changing reward distributor address
    1. The concept of owner
 1. Upgraded used OpenZeppelin contract versions
 1. Started using Solidity version 0.8.17
