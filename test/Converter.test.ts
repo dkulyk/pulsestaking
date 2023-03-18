@@ -75,6 +75,13 @@ describe("Converter", function () {
       expect(setStaking).to.equal(ethers.constants.AddressZero);
       expect(setRewards).to.equal(rewardsToken.address);
     });
+
+    it("Fails for zero token address", async function () {
+      const ConverterFactory = await ethers.getContractFactory("Converter");
+      await expect(
+        ConverterFactory.connect(deployer).deploy(ethers.constants.AddressZero)
+      ).to.be.revertedWith("Invalid token");
+    });
   });
 
   describe("Setting staking contract", async function () {
@@ -94,6 +101,19 @@ describe("Converter", function () {
       const setStaking = await converterContract.staking();
 
       expect(setStaking).to.equal(stakingContract.address);
+    });
+
+    it("Doesn't do anything for zero address and can be reset", async function () {
+      await converterContract.setStakingContract(ethers.constants.AddressZero);
+
+      const setStakingBefore = await converterContract.staking();
+
+      await converterContract.setStakingContract(stakingContract.address);
+
+      const setStakingAfter = await converterContract.staking();
+
+      expect(setStakingBefore).to.equal(ethers.constants.AddressZero);
+      expect(setStakingAfter).to.equal(stakingContract.address);
     });
 
     it("Works for arbitrary address", async function () {
@@ -340,6 +360,15 @@ describe("Converter", function () {
 
       expect(converterBalance).to.be.equal(0);
       expect(stakingBalance).to.be.equal(0);
+    });
+  });
+
+  describe("Flush without staking set", async function () {
+    it("Fails", async function () {
+      await converterContract.deposit({ value: 1 });
+      await expect(converterContract.flush()).to.be.revertedWith(
+        "No staking set"
+      );
     });
   });
 });
