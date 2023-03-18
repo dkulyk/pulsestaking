@@ -5,16 +5,17 @@ import { Converter, ERC20, IWETH, StakingRewards } from "../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 
-describe("Voting", function () {
+describe("Converter", function () {
   let stakingContract: StakingRewards;
   let stakingToken: ERC20;
   let rewardsToken: IWETH;
   let converterContract: Converter;
   let deployer: SignerWithAddress;
+  let user1: SignerWithAddress;
 
   async function deployConverterFixture() {
     // Contracts are deployed using the first signer/account by default
-    const [_deployer] = await ethers.getSigners();
+    const [_deployer, _user1] = await ethers.getSigners();
 
     const StakingFactory = await ethers.getContractFactory("StakingRewards");
     const ERC20Factory = await ethers.getContractFactory("MockERC20");
@@ -39,14 +40,28 @@ describe("Voting", function () {
     await _staking.deployed();
     await _converter.deployed();
 
-    return { _deployer, _rewardsToken, _stakingToken, _staking, _converter };
+    return {
+      _deployer,
+      _user1,
+      _rewardsToken,
+      _stakingToken,
+      _staking,
+      _converter,
+    };
   }
 
   beforeEach(async function () {
-    const { _deployer, _rewardsToken, _stakingToken, _staking, _converter } =
-      await loadFixture(deployConverterFixture);
+    const {
+      _deployer,
+      _user1,
+      _rewardsToken,
+      _stakingToken,
+      _staking,
+      _converter,
+    } = await loadFixture(deployConverterFixture);
 
     deployer = _deployer;
+    user1 = _user1;
     rewardsToken = _rewardsToken;
     stakingToken = _stakingToken;
     stakingContract = _staking;
@@ -70,6 +85,14 @@ describe("Voting", function () {
       const setStaking = await converterContract.staking();
 
       expect(setStaking).to.equal(stakingContract.address);
+    });
+
+    it("Works for arbitrary address", async function () {
+      await converterContract.setStakingContract(user1.address);
+
+      const setStaking = await converterContract.staking();
+
+      expect(setStaking).to.equal(user1.address);
     });
 
     it("Fails if trying to reset", async function () {
@@ -102,6 +125,24 @@ describe("Voting", function () {
       expect(rewardBalance).to.be.equal(1);
     });
 
+    it("Is callable by anyone", async function () {
+      await converterContract.connect(user1).deposit({ value: 1 });
+    });
+
+    it("Zero deposit does nothing", async function () {
+      await converterContract.deposit({ value: 0 });
+
+      const nativeBalance = await ethers.provider.getBalance(
+        converterContract.address
+      );
+      const rewardBalance = await rewardsToken.balanceOf(
+        converterContract.address
+      );
+
+      expect(nativeBalance).to.be.equal(0);
+      expect(rewardBalance).to.be.equal(0);
+    });
+
     it("Works for subsequent deposits", async function () {
       await converterContract.deposit({ value: 1 });
       await converterContract.deposit({ value: 10 });
@@ -115,6 +156,165 @@ describe("Voting", function () {
 
       expect(nativeBalance).to.be.equal(0);
       expect(rewardBalance).to.be.equal(11);
+    });
+  });
+
+  describe("Receive", async function () {
+    beforeEach(async function () {
+      await converterContract.setStakingContract(stakingContract.address);
+    });
+
+    it("Works", async function () {
+      await deployer.sendTransaction({
+        to: converterContract.address,
+        value: 1,
+        gasLimit: 100000,
+      });
+
+      const nativeBalance = await ethers.provider.getBalance(
+        converterContract.address
+      );
+      const rewardBalance = await rewardsToken.balanceOf(
+        converterContract.address
+      );
+
+      expect(nativeBalance).to.be.equal(0);
+      expect(rewardBalance).to.be.equal(1);
+    });
+
+    it("Is callable by anyone", async function () {
+      await user1.sendTransaction({
+        to: converterContract.address,
+        value: 1,
+        gasLimit: 100000,
+      });
+    });
+
+    it("Zero deposit does nothing", async function () {
+      await deployer.sendTransaction({
+        to: converterContract.address,
+        value: 0,
+        gasLimit: 100000,
+      });
+
+      const nativeBalance = await ethers.provider.getBalance(
+        converterContract.address
+      );
+      const rewardBalance = await rewardsToken.balanceOf(
+        converterContract.address
+      );
+
+      expect(nativeBalance).to.be.equal(0);
+      expect(rewardBalance).to.be.equal(0);
+    });
+
+    it("Works for subsequent deposits", async function () {
+      await deployer.sendTransaction({
+        to: converterContract.address,
+        value: 1,
+        gasLimit: 100000,
+      });
+      await deployer.sendTransaction({
+        to: converterContract.address,
+        value: 10,
+        gasLimit: 100000,
+      });
+
+      const nativeBalance = await ethers.provider.getBalance(
+        converterContract.address
+      );
+      const rewardBalance = await rewardsToken.balanceOf(
+        converterContract.address
+      );
+
+      expect(nativeBalance).to.be.equal(0);
+      expect(rewardBalance).to.be.equal(11);
+    });
+  });
+
+  describe("Flush", async function () {
+    beforeEach(async function () {
+      await converterContract.setStakingContract(stakingContract.address);
+    });
+
+    it("Works", async function () {
+      await converterContract.deposit({ value: 1 });
+      await converterContract.flush();
+
+      const converterBalance = await rewardsToken.balanceOf(
+        converterContract.address
+      );
+      const stakingBalance = await rewardsToken.balanceOf(
+        stakingContract.address
+      );
+
+      expect(converterBalance).to.be.equal(0);
+      expect(stakingBalance).to.be.equal(1);
+    });
+
+    it("Is callable by anyone", async function () {
+      await converterContract.connect(user1).flush();
+    });
+
+    it("Works for subsequent flushes", async function () {
+      await converterContract.deposit({ value: 1 });
+      await converterContract.flush();
+
+      await converterContract.deposit({ value: 2 });
+      await converterContract.flush();
+
+      const converterBalance = await rewardsToken.balanceOf(
+        converterContract.address
+      );
+      const stakingBalance = await rewardsToken.balanceOf(
+        stakingContract.address
+      );
+
+      expect(converterBalance).to.be.equal(0);
+      expect(stakingBalance).to.be.equal(3);
+    });
+
+    it("Notifies about rewards", async function () {
+      const periodFinishBefore = await stakingContract.periodFinish();
+
+      await converterContract.deposit({ value: 1 });
+      await converterContract.flush();
+
+      const periodFinishAfter = await stakingContract.periodFinish();
+
+      expect(periodFinishBefore).to.be.lessThan(periodFinishAfter);
+    });
+
+    it("Notifies about rewards for subsequent flushes", async function () {
+      const periodFinishBefore = await stakingContract.periodFinish();
+
+      await converterContract.deposit({ value: 1 });
+      await converterContract.flush();
+
+      const periodFinishMiddle = await stakingContract.periodFinish();
+
+      await converterContract.deposit({ value: 2 });
+      await converterContract.flush();
+
+      const periodFinishAfter = await stakingContract.periodFinish();
+
+      expect(periodFinishBefore).to.be.lessThan(periodFinishMiddle);
+      expect(periodFinishMiddle).to.be.lessThan(periodFinishAfter);
+    });
+
+    it("Empty flush doesn't do anything", async function () {
+      await converterContract.flush();
+      await converterContract.flush();
+
+      const converterBalance = await rewardsToken.balanceOf(
+        converterContract.address
+      );
+      const stakingBalance = await rewardsToken.balanceOf(
+        stakingContract.address
+      );
+
+      expect(converterBalance).to.be.equal(0);
+      expect(stakingBalance).to.be.equal(0);
     });
   });
 });
