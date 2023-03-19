@@ -5,7 +5,7 @@ import "./interfaces/IWETH.sol";
 import "./StakingRewards.sol";
 
 /**
- *   @notice Contract for converting native assets to wrapped version, and to flush the wrapped versions to a staking contract
+ * @notice Contract for converting native assets to wrapped version, and to flush the wrapped versions to a staking contract
  */
 contract Converter {
     StakingRewards public staking;
@@ -33,17 +33,17 @@ contract Converter {
     }
 
     /**
-     * @notice Deposit native asset to be converted into a wrapped version
-     */
-    function deposit() public payable {
-        rewardsToken.deposit{value: msg.value}();
-    }
-
-    /**
      * @notice Fallback for any native asset sends. Leads to deposit
      */
     receive() external payable {
         deposit();
+    }
+
+    /**
+     * @notice Deposit native asset to be converted into a wrapped version
+     */
+    function deposit() public payable {
+        rewardsToken.deposit{value: msg.value}();
     }
 
     /**

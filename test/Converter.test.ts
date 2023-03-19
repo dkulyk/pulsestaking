@@ -1,13 +1,12 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { Converter, ERC20, IWETH, StakingRewards } from "../typechain-types";
+import { Converter, IWETH, MockWETH, StakingRewards } from "../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 describe("Converter", function () {
   let stakingContract: StakingRewards;
-  let stakingToken: ERC20;
-  let rewardsToken: IWETH;
+  let rewardsToken: MockWETH;
   let converterContract: Converter;
   let deployer: SignerWithAddress;
   let user1: SignerWithAddress;
@@ -43,26 +42,18 @@ describe("Converter", function () {
       _deployer,
       _user1,
       _rewardsToken,
-      _stakingToken,
       _staking,
       _converter,
     };
   }
 
   beforeEach(async function () {
-    const {
-      _deployer,
-      _user1,
-      _rewardsToken,
-      _stakingToken,
-      _staking,
-      _converter,
-    } = await loadFixture(deployConverterFixture);
+    const { _deployer, _user1, _rewardsToken, _staking, _converter } =
+      await loadFixture(deployConverterFixture);
 
     deployer = _deployer;
     user1 = _user1;
     rewardsToken = _rewardsToken;
-    stakingToken = _stakingToken;
     stakingContract = _staking;
     converterContract = _converter;
   });
