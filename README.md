@@ -1,27 +1,27 @@
 # Staking functionality for Pulse project
 
-There will be two contracts: the staking contract and a separate conversion contract.
-
-The staking contract will be based on the staking contract by Synthetix (https://github.com/Synthetixio/synthetix/blob/c53070db9a93e5717ca7f74fcaf3922e991fb71b/contracts/StakingRewards.sol). The contract will be kept as close to the original as possible.
+This project contains two contracts: a staking contract and a separate conversion contract.
 
 ## Conversion contract
 
-We will implement a separate contract which is in charge of converting the blockchain's native asset into reward ERC20 tokens.
+The conversion contract is in charge of converting the blockchain's native asset into reward ERC20 tokens, and to hold staking reward assets until they are flushed to the staking contract.
 
-Whenever native assets are input to the contract it automatically converts it to the reward token and sends to the staking contract to increase the reward.
+Whenever native assets are input to the contract it automatically converts it to the reward token. The tokens are then kept in the contract, until flushed.
 
-For the purpose of this project it is assumed that the reward token is a wrapped token which can be obtained by depositing native asset to a specific wrapper contract and getting the wrapped token in return. It is assumed that an address is available for the wrapped token. No real trading or anything like that will be implemented.
+Anyone can flush all of the reward tokens in the contract to the staking contract, whenever. Flushing notifies the staking contract of the new rewards and its reward rates are adjusted accordingly.
+
+For the purpose of this project it is assumed that the reward token is a wrapped token which can be obtained by depositing native asset to a specific wrapper contract and getting the wrapped token in return. It is assumed that an address is available for the wrapped token when a real deployment is done. No real trading or anything like is implemented.
 
 ### Functionality:
 
 - Whenever native assets are sent to this contract, the assets are converted to a wrapped version (also called the reward token) and kept in this contract
 - Function to flush all reward tokens in the contract to the staking contract. This also notifies the staking contract of the new rewards. This is callable by anyone
-- Reward tokens are sent to this contract from the marketplace contract
+- Reward tokens can be sent to this contract from wherever for later flushing
 - No other functionality: no owners, no special access, nothing more
 
 ## Staking contract
 
-The staking contract is heavily based on a staking contract from Synthetix. Only minor modifications are done to the original Synthetix contract.
+The staking contract is based on the staking contract by Synthetix (https://github.com/Synthetixio/synthetix/blob/c53070db9a93e5717ca7f74fcaf3922e991fb71b/contracts/StakingRewards.sol). The contract will be kept as close to the original as possible.
 
 ### Original Synthetix features
 
