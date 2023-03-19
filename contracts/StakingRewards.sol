@@ -60,13 +60,18 @@ contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
         }
         return
             rewardPerTokenStored +
-                ((lastTimeRewardApplicable() - lastUpdateTime) * rewardRate * 1e18 / _totalSupply)
-                //lastTimeRewardApplicable().sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(_totalSupply)
-            ;
+            (((lastTimeRewardApplicable() - lastUpdateTime) *
+                rewardRate *
+                1e18) / _totalSupply);
+        //lastTimeRewardApplicable().sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(_totalSupply)
     }
 
     function earned(address account) public view returns (uint256) {
-        return (_balances[account] * (rewardPerToken() - userRewardPerTokenPaid[account])) / 1e18 + rewards[account];
+        return
+            (_balances[account] *
+                (rewardPerToken() - userRewardPerTokenPaid[account])) /
+            1e18 +
+            rewards[account];
         //return _balances[account].mul(rewardPerToken().sub(userRewardPerTokenPaid[account])).div(1e18).add(rewards[account]);
     }
 
@@ -76,7 +81,9 @@ contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function stake(uint256 amount) external nonReentrant updateReward(msg.sender) {
+    function stake(
+        uint256 amount
+    ) external nonReentrant updateReward(msg.sender) {
         require(amount > 0, "Cannot stake 0");
         _totalSupply = _totalSupply + amount;
         _balances[msg.sender] = _balances[msg.sender] + amount;
@@ -84,7 +91,9 @@ contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
         emit Staked(msg.sender, amount);
     }
 
-    function withdraw(uint256 amount) public nonReentrant updateReward(msg.sender) {
+    function withdraw(
+        uint256 amount
+    ) public nonReentrant updateReward(msg.sender) {
         require(amount > 0, "Cannot withdraw 0");
         _totalSupply = _totalSupply - amount;
         _balances[msg.sender] = _balances[msg.sender] - amount;
@@ -108,7 +117,16 @@ contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
-    function notifyRewardAmount(uint256 reward) override external onlyRewardsDistribution updateReward(address(0)) {
+    /**
+     * @notice Notify the contract of new rewards.
+     * @param reward How much rewards has been added to the contract
+     * IMPORTANT: never notify of more rewards than has been input.
+     * Notifying too high an amount will screw up the reward calculations.
+     * This is luckily handled by the calling entity.
+     */
+    function notifyRewardAmount(
+        uint256 reward
+    ) external override onlyRewardsDistribution updateReward(address(0)) {
         if (block.timestamp >= periodFinish) {
             rewardRate = reward / rewardsDuration;
         } else {
@@ -123,7 +141,10 @@ contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
         // very high values of rewardRate in the earned and rewardsPerToken functions;
         // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
         uint balance = rewardsToken.balanceOf(address(this));
-        require(rewardRate <= balance / rewardsDuration, "Provided reward too high");
+        require(
+            rewardRate <= balance / rewardsDuration,
+            "Provided reward too high"
+        );
 
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp + rewardsDuration;
