@@ -74,6 +74,7 @@ When a user stakes he does not stake for any staking period but from the user's 
 - To unstake some amount of your stake, call the `withdraw` function
 - To collect all of your accumulated rewards, call the `getReward` function
 - To unstake everything and collect all rewards, call the `exit` function
+- To add new rewards to the contract, flush them from the converter contract.
 
 ### Deployment settings
 
