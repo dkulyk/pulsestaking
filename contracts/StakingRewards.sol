@@ -63,14 +63,15 @@ contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
             (((lastTimeRewardApplicable() - lastUpdateTime) *
                 rewardRate *
                 1e18) / _totalSupply);
-        //lastTimeRewardApplicable().sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(_totalSupply)
+        /* rewardPerTokenStored.add(
+                lastTimeRewardApplicable().sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(_totalSupply)
+            ); */
     }
 
     function earned(address account) public view returns (uint256) {
         return
-            (_balances[account] *
-                (rewardPerToken() - userRewardPerTokenPaid[account])) /
-            1e18 +
+            ((_balances[account] *
+                (rewardPerToken() - userRewardPerTokenPaid[account])) / 1e18) +
             rewards[account];
         //return _balances[account].mul(rewardPerToken().sub(userRewardPerTokenPaid[account])).div(1e18).add(rewards[account]);
     }
