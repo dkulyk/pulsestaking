@@ -220,51 +220,159 @@ describe("StakingRewards", function () {
   });
 
   describe("Staking", async function () {
+    // Solidity calculations are not exact, so we have to allow some error tolerance when calculating rewards.
+    // This seems to be a good tolerance for a single twoToken reward. Multiply as needed.
+    const errorTolerance = 200000;
     beforeEach(async function () {
       const amount = thousandTokens;
-      await stakingToken.connect(staker1).freeMint(amount);
-      await stakingToken
-        .connect(staker1)
-        .approve(stakingContract.address, amount);
+
+      const prepareTokens = async (user: SignerWithAddress) => {
+        await stakingToken.connect(user).freeMint(amount);
+        await stakingToken
+          .connect(user)
+          .approve(stakingContract.address, amount);
+      };
+      await prepareTokens(staker1);
+      await prepareTokens(staker2);
+      await prepareTokens(staker3);
 
       await rewardsToken.connect(rewardsDistributer).freeMint(amount);
     });
+    describe("One staker", async function () {
+      it("Sets the right data", async function () {
+        await stakingContract.connect(staker1).stake(oneToken);
 
-    it("Sets the right data", async function () {
-      await stakingContract.connect(staker1).stake(oneToken);
+        const totalSupply = await stakingContract.totalSupply();
+        const tokenBalance = await stakingContract.balanceOf(staker1.address);
+        const earned = await stakingContract.earned(staker1.address);
+        const balance = await stakingToken.balanceOf(stakingContract.address);
 
-      const totalSupply = await stakingContract.totalSupply();
-      const tokenBalance = await stakingContract.balanceOf(staker1.address);
-      const earned = await stakingContract.earned(staker1.address);
-      const balance = await stakingToken.balanceOf(stakingContract.address);
+        expect(totalSupply).to.equal(oneToken);
+        expect(tokenBalance).to.equal(oneToken);
+        expect(earned).to.equal(0);
+        expect(balance).to.equal(oneToken);
+      });
 
-      expect(totalSupply).to.equal(oneToken);
-      expect(tokenBalance).to.equal(oneToken);
-      expect(earned).to.equal(0);
-      expect(balance).to.equal(oneToken);
+      it("Staking without rewards gives nothing", async function () {
+        await stakingContract.connect(staker1).stake(oneToken);
+
+        await timeTravelDays(4);
+
+        const earned = await stakingContract.earned(staker1.address);
+
+        expect(earned).to.equal(0);
+      });
+
+      it("Staking alone gives all rewards", async function () {
+        await stakingContract.connect(staker1).stake(oneToken);
+
+        await sendRewards(twoTokens);
+        await timeTravelDays(7);
+
+        const earned = await stakingContract.earned(staker1.address);
+
+        expect(earned).to.be.approximately(twoTokens, errorTolerance);
+      });
+
+      it("Can withdraw stake", async function () {
+        const balanceBefore = await stakingToken.balanceOf(staker1.address);
+        await stakingContract.connect(staker1).stake(oneToken);
+
+        await sendRewards(twoTokens);
+        await timeTravelDays(7);
+
+        await stakingContract.connect(staker1).withdraw(oneToken);
+
+        const balanceAfter = await stakingToken.balanceOf(staker1.address);
+
+        const earned = await stakingContract.earned(staker1.address);
+
+        expect(earned).to.be.approximately(twoTokens, errorTolerance);
+        expect(balanceBefore).to.equal(balanceAfter);
+      });
+
+      it("Can withdraw rewards", async function () {
+        const balanceBefore = await rewardsToken.balanceOf(staker1.address);
+        await stakingContract.connect(staker1).stake(oneToken);
+
+        await sendRewards(twoTokens);
+        await timeTravelDays(7);
+
+        const earned = await stakingContract.earned(staker1.address);
+
+        await stakingContract.connect(staker1).getReward();
+
+        const balanceAfter = await rewardsToken.balanceOf(staker1.address);
+
+        expect(earned).to.be.approximately(twoTokens, errorTolerance);
+        expect(balanceAfter.sub(balanceBefore)).to.equal(earned);
+      });
+
+      it("Rewards don't disappear after staking period", async function () {
+        await stakingContract.connect(staker1).stake(oneToken);
+
+        await sendRewards(twoTokens);
+        await timeTravelDays(70);
+
+        const earned = await stakingContract.earned(staker1.address);
+
+        expect(earned).to.be.approximately(twoTokens, errorTolerance);
+      });
+
+      it("Rewards don't disappear even when not participating", async function () {
+        await stakingContract.connect(staker1).stake(oneToken);
+
+        await sendRewards(twoTokens);
+        await timeTravelDays(10);
+
+        // unstake all
+        await stakingContract.connect(staker1).withdraw(oneToken);
+
+        // Start a new staking period where staker1 is not partipating
+        await sendRewards(twoTokens);
+        await stakingContract.connect(staker2).stake(oneToken);
+        await timeTravelDays(10);
+
+        const earned = await stakingContract.earned(staker1.address);
+
+        expect(earned).to.be.approximately(twoTokens, errorTolerance);
+      });
+
+      it("Same stake is valid for multiple staking periods", async function () {
+        await stakingContract.connect(staker1).stake(oneToken);
+
+        await sendRewards(twoTokens);
+        await timeTravelDays(10);
+
+        await sendRewards(twoTokens);
+        await timeTravelDays(10);
+
+        const earned = await stakingContract.earned(staker1.address);
+
+        expect(earned).to.be.approximately(
+          twoTokens.mul(2),
+          errorTolerance * 2
+        );
+      });
     });
 
-    it("Staking without rewards gives nothing", async function () {
-      await stakingContract.connect(staker1).stake(oneToken);
+    describe("Multiple stakers", async function () {
+      it("Equal two stakes divides rewards", async function () {
+        await stakingContract.connect(staker1).stake(oneToken);
+        await stakingContract.connect(staker2).stake(oneToken);
 
-      await timeTravelDays(4);
+        await sendRewards(twoTokens);
+        await timeTravelDays(7);
 
-      const earned = await stakingContract.earned(staker1.address);
+        const earned1 = await stakingContract.earned(staker1.address);
+        const earned2 = await stakingContract.earned(staker2.address);
 
-      expect(earned).to.equal(0);
-    });
-
-    it("Staking alone gives all rewards", async function () {
-      await stakingContract.connect(staker1).stake(oneToken);
-
-      await sendRewards(oneToken);
-      await timeTravelDays(8);
-
-      const earned = await stakingContract.earned(staker1.address);
-
-      await stakingContract.connect(staker1).exit();
-
-      expect(earned).to.be.approximately(oneToken, 100000);
+        expect(earned1).to.be.approximately(
+          twoTokens.div(2),
+          errorTolerance / 2
+        );
+        expect(earned2).to.equal(earned1);
+      });
     });
   });
 
@@ -293,8 +401,6 @@ TokenStored: ${rewardPerTokenStored.toString()}, Rewards: ${rewards.toString()}`
 
   const timeTravelDays = async (days: number) => {
     const seconds = 24 * 60 * 60 * days;
-    /*  await network.provider.send("evm_increaseTime", [seconds]);
-    await network.provider.send("evm_mine"); */
     await time.increase(seconds);
   };
 });
