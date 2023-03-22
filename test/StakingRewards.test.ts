@@ -221,8 +221,8 @@ describe("StakingRewards", function () {
 
   describe("Staking", async function () {
     // Solidity calculations are not exact, so we have to allow some error tolerance when calculating rewards.
-    // This seems to be a good tolerance for a single twoToken reward. Multiply as needed.
-    const errorTolerance = 200000;
+    // The tolerance is negligible compared to the amounts: the error tolerance we use is around 0,000000000001%.
+    const errorTolerance = twoTokens.div(10_000_000_000_000);
     beforeEach(async function () {
       const amount = thousandTokens;
 
@@ -272,6 +272,9 @@ describe("StakingRewards", function () {
         const earned = await stakingContract.earned(staker1.address);
 
         expect(earned).to.be.approximately(twoTokens, errorTolerance);
+        // 19999999999 9 9 814400
+        // 20000000000 0 0 000000
+        //      200000 10000000000000
       });
 
       it("Can withdraw stake", async function () {
@@ -351,7 +354,33 @@ describe("StakingRewards", function () {
 
         expect(earned).to.be.approximately(
           twoTokens.mul(2),
-          errorTolerance * 2
+          errorTolerance.mul(2)
+        );
+      });
+
+      it("Not ending the reward period give correct rewards", async function () {
+        await stakingContract.connect(staker1).stake(oneToken);
+
+        await sendRewards(twoTokens);
+        await timeTravelDays(4);
+
+        await sendRewards(twoTokens);
+        await timeTravelDays(5);
+
+        await sendRewards(twoTokens);
+        await timeTravelDays(6);
+
+        await sendRewards(twoTokens);
+        await timeTravelDays(4);
+
+        await sendRewards(twoTokens);
+        await timeTravelDays(7); // end the staking period
+
+        const earned = await stakingContract.earned(staker1.address);
+
+        expect(earned).to.be.approximately(
+          twoTokens.mul(5),
+          errorTolerance.mul(15) // more calculations requires more tolerance
         );
       });
     });
@@ -369,7 +398,7 @@ describe("StakingRewards", function () {
 
         expect(earned1).to.be.approximately(
           twoTokens.div(2),
-          errorTolerance / 2
+          errorTolerance.div(2)
         );
         expect(earned2).to.equal(earned1);
       });
