@@ -405,6 +405,7 @@ describe("StakingRewards", function () {
     });
   });
 
+  // Useful for debugging tests
   const printall = async (user: SignerWithAddress) => {
     const totalSupply = await stakingContract.totalSupply();
     const tokenBalance = await stakingContract.balanceOf(user.address);
