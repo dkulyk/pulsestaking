@@ -15,7 +15,6 @@ describe("StakingRewards", function () {
   let stakingContract: MockStakingRewards;
   let stakingToken: MockERC20;
   let rewardsToken: MockWETH;
-  let deployer: SignerWithAddress;
   let rewardsDistributer: SignerWithAddress;
   let staker1: SignerWithAddress;
   let staker2: SignerWithAddress;
@@ -23,7 +22,6 @@ describe("StakingRewards", function () {
 
   const oneToken = ethers.utils.parseUnits("1", 18);
   const twoTokens = ethers.utils.parseUnits("2", 18);
-  const twentyTokens = ethers.utils.parseUnits("20", 18);
   const thousandTokens = ethers.utils.parseUnits("1000", 18);
 
   async function deployStakingFixture() {
@@ -77,7 +75,6 @@ describe("StakingRewards", function () {
       _staking,
     } = await loadFixture(deployStakingFixture);
 
-    deployer = _deployer;
     rewardsDistributer = _rewardsDistributer;
     staker1 = _user1;
     staker2 = _user2;
@@ -442,6 +439,30 @@ describe("StakingRewards", function () {
 
         // Second staker starts with the same stake amount
         await stakingContract.connect(staker2).stake(oneToken);
+
+        await timeTravelDays(4);
+
+        const earned1 = await stakingContract.earned(staker1.address);
+        const earned2 = await stakingContract.earned(staker2.address);
+
+        // A lot more calculations requires a lot larger error tolerance.
+        // Rrror tolerance of about 0,0001%.
+        const tolerance = twoTokens.div(1000000);
+
+        // First should get about 3/4 of the total rewards
+        expect(earned1).to.be.approximately(twoTokens.div(4).mul(3), tolerance);
+        expect(earned2.mul(3)).to.be.approximately(earned1, tolerance.mul(10));
+      });
+
+      it("Inequal two stakes divides rewards fairly, unstaking at middle", async function () {
+        await stakingContract.connect(staker1).stake(oneToken);
+        await stakingContract.connect(staker2).stake(oneToken);
+
+        await sendRewards(twoTokens);
+        await timeTravelDays(4);
+
+        // Second staker withdraws stake
+        await stakingContract.connect(staker2).withdraw(oneToken);
 
         await timeTravelDays(4);
 
