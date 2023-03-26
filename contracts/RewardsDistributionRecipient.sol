@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-// https://docs.synthetix.io/contracts/source/contracts/rewardsdistributionrecipient
+/**
+ * @notice An abstract contract to define functionality for reward distributer
+ */
 abstract contract RewardsDistributionRecipient {
     address public rewardsDistribution;
 
