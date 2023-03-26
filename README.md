@@ -21,7 +21,7 @@ For the purpose of this project it is assumed that the reward token is a wrapped
 
 ## Staking contract
 
-The staking contract is based on the staking contract by Synthetix (https://github.com/Synthetixio/synthetix/blob/c53070db9a93e5717ca7f74fcaf3922e991fb71b/contracts/StakingRewards.sol). The contract will be kept as close to the original as possible.
+The staking contract is based on the staking contract by Synthetix (https://github.com/Synthetixio/synthetix/blob/c53070db9a93e5717ca7f74fcaf3922e991fb71b/contracts/StakingRewards.sol). The contract is kept as close to the original as possible.
 
 ### Original Synthetix features
 
@@ -67,6 +67,7 @@ When a user stakes he does not stake for any staking period but from the user's 
 1. Started using Solidity version 0.8.17
 1. Removed the use of SafeMath (no longer needed with new Solidity)
 1. Removed the use of IStakingRewards interface
+1. Added comments
 
 ### Usage
 
@@ -76,13 +77,33 @@ When a user stakes he does not stake for any staking period but from the user's 
 - To unstake everything and collect all rewards, call the `exit` function
 - To add new rewards to the contract, flush them from the converter contract.
 
-### Deployment settings
+## Installation
 
-To deploy the contract the following information is needed:
+1. Install packages: `npm i`
+1. Run tests: `npx hardhat test`
 
-1. Deployment parameters:
-   1. Which address is allowed to add reward tokens to the contract. This should be the 'conversion' contract so it can add rewards.
-   1. Which address is the reward token
-   1. Which address is the staking token
-1. Contract static parameters:
-   1. Staking period duration. The default is 7 days.
+## Deployment
+
+### Non-production deployment
+
+If you want to deploy to a live test network (Sepolia) you should:
+
+1. Setup environment variables in a file called `.env`. More details can be found in file `env.example`.
+1. Deploy: `npx hardhat run scripts/deploy.ts --network sepolia`
+
+The deploy script performes the following actions:
+
+1. Deploys all the needed contracts (including a new mock instance of WETH). This includes the conversion contract.
+1. Links the conversion contract and the staking contract together
+1. Verifies all of the deployed contracts in Etherscan
+1. Writes the contract addresses [here](contract_addresses.md). This file therefore contains the latest deployment addresses
+
+### Production deployment
+
+Production deployment is quite similar to a testnet deployment, with the following changes:
+
+1. New environment settings (`.env` file) are needed for the new network
+1. Change the deployment parameters:
+   1. Conversion contract address (`_rewardsDistribution`) can be left to be determined by the deployment, since deployment also deploys the conversion contract.
+   1. Change the `_rewardsToken` parameter to be the wrapped native asset token. A wrapped native asset contract has to be deployed in the network by someone before deploying staking. The WETH contract included in this project IS NOT TO BE USED in production. Address to the wrapped native asset contract has to be provided in deployment parameters
+   1. Change the `_stakingToken` parameter
