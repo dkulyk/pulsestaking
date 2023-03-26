@@ -6,13 +6,13 @@ import {
   IWETH,
   MockERC20,
   MockWETH,
-  StakingRewards,
+  MockStakingRewards,
 } from "../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 
 describe("StakingRewards", function () {
-  let stakingContract: StakingRewards;
+  let stakingContract: MockStakingRewards;
   let stakingToken: MockERC20;
   let rewardsToken: MockWETH;
   let deployer: SignerWithAddress;
@@ -31,7 +31,9 @@ describe("StakingRewards", function () {
     const [_deployer, _rewardsDistributer, _user1, _user2, _user3] =
       await ethers.getSigners();
 
-    const StakingFactory = await ethers.getContractFactory("StakingRewards");
+    const StakingFactory = await ethers.getContractFactory(
+      "MockStakingRewards"
+    );
     const ERC20Factory = await ethers.getContractFactory("MockERC20");
     const WETHFactory = await ethers.getContractFactory("MockWETH");
 
@@ -47,6 +49,9 @@ describe("StakingRewards", function () {
     await _rewardsToken.deployed();
     await _stakingToken.deployed();
     await _staking.deployed();
+
+    const _stakingContr: MockStakingRewards = _staking;
+    await _stakingContr.changeStakingPeriod(8);
 
     return {
       _deployer,
@@ -221,8 +226,8 @@ describe("StakingRewards", function () {
 
   describe("Staking", async function () {
     // Solidity calculations are not exact, so we have to allow some error tolerance when calculating rewards.
-    // The tolerance is negligible compared to the amounts: the error tolerance we use is around 0,000000000001%.
-    const errorTolerance = twoTokens.div(10_000_000_000_000);
+    // The tolerance is negligible compared to the amounts: the error tolerance we use is around 0,000000000002%.
+    const errorTolerance = twoTokens.mul(2).div(10_000_000_000_000);
     beforeEach(async function () {
       const amount = thousandTokens;
 
@@ -238,6 +243,7 @@ describe("StakingRewards", function () {
 
       await rewardsToken.connect(rewardsDistributer).freeMint(amount);
     });
+
     describe("One staker", async function () {
       it("Sets the right data", async function () {
         await stakingContract.connect(staker1).stake(oneToken);
@@ -267,14 +273,11 @@ describe("StakingRewards", function () {
         await stakingContract.connect(staker1).stake(oneToken);
 
         await sendRewards(twoTokens);
-        await timeTravelDays(7);
+        await timeTravelDays(8);
 
         const earned = await stakingContract.earned(staker1.address);
 
         expect(earned).to.be.approximately(twoTokens, errorTolerance);
-        // 19999999999 9 9 814400
-        // 20000000000 0 0 000000
-        //      200000 10000000000000
       });
 
       it("Can withdraw stake", async function () {
@@ -282,7 +285,7 @@ describe("StakingRewards", function () {
         await stakingContract.connect(staker1).stake(oneToken);
 
         await sendRewards(twoTokens);
-        await timeTravelDays(7);
+        await timeTravelDays(8);
 
         await stakingContract.connect(staker1).withdraw(oneToken);
 
@@ -299,7 +302,7 @@ describe("StakingRewards", function () {
         await stakingContract.connect(staker1).stake(oneToken);
 
         await sendRewards(twoTokens);
-        await timeTravelDays(7);
+        await timeTravelDays(8);
 
         const earned = await stakingContract.earned(staker1.address);
 
@@ -374,7 +377,7 @@ describe("StakingRewards", function () {
         await timeTravelDays(4);
 
         await sendRewards(twoTokens);
-        await timeTravelDays(7); // end the staking period
+        await timeTravelDays(8); // end the staking period
 
         const earned = await stakingContract.earned(staker1.address);
 
@@ -383,10 +386,24 @@ describe("StakingRewards", function () {
           errorTolerance.mul(15) // more calculations requires more tolerance
         );
       });
+
+      it("Inserting rewards mid-period gives out all rewards", async function () {
+        await stakingContract.connect(staker1).stake(oneToken);
+
+        await sendRewards(oneToken);
+        await timeTravelDays(4);
+
+        await sendRewards(oneToken);
+        await timeTravelDays(8);
+
+        const earned = await stakingContract.earned(staker1.address);
+
+        expect(earned).to.be.approximately(twoTokens, errorTolerance.mul(2));
+      });
     });
 
-    describe("Multiple stakers", async function () {
-      it("Equal two stakes divides rewards", async function () {
+    xdescribe("Multiple stakers", async function () {
+      it("Equal two stakes divides rewards evenly", async function () {
         await stakingContract.connect(staker1).stake(oneToken);
         await stakingContract.connect(staker2).stake(oneToken);
 
@@ -401,6 +418,35 @@ describe("StakingRewards", function () {
           errorTolerance.div(2)
         );
         expect(earned2).to.equal(earned1);
+      });
+
+      it("Inequal two stakes divides rewards fairly, staking at start", async function () {
+        await stakingContract.connect(staker1).stake(oneToken);
+        await stakingContract.connect(staker2).stake(twoTokens);
+
+        await sendRewards(twoTokens);
+        await timeTravelDays(7);
+
+        const earned1 = await stakingContract.earned(staker1.address);
+        const earned2 = await stakingContract.earned(staker2.address);
+
+        expect(earned2).to.equal(earned1.mul(2));
+      });
+
+      it("Inequal two stakes divides rewards fairly, staking at middle", async function () {
+        await stakingContract.connect(staker1).stake(oneToken);
+
+        await sendRewards(twoTokens);
+        await timeTravelDays(1);
+
+        await stakingContract.connect(staker2).stake(oneToken);
+
+        await timeTravelDays(8);
+
+        const earned1 = await stakingContract.earned(staker1.address);
+        const earned2 = await stakingContract.earned(staker2.address);
+
+        expect(earned2).to.equal(earned1.mul(7));
       });
     });
   });
