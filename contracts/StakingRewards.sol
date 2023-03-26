@@ -203,7 +203,6 @@ contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
             uint256 remaining = periodFinish - block.timestamp;
             uint256 leftover = remaining * rewardRate;
             rewardRate = (reward + leftover) / rewardsDuration;
-            // rewardRate = reward.add(leftover).div(rewardsDuration);
         }
 
         // Ensure the provided reward amount is not more than the balance in the contract.
