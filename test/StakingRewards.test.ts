@@ -87,7 +87,7 @@ describe("StakingRewards", function () {
     stakingContract = _staking;
   });
 
-  xdescribe("Deployment", async function () {
+  describe("Deployment", async function () {
     it("Sets the right data", async function () {
       const setRewardsDistribution =
         await stakingContract.rewardsDistribution();
@@ -100,7 +100,7 @@ describe("StakingRewards", function () {
     });
   });
 
-  xdescribe("Notify rewards", async function () {
+  describe("Send rewards", async function () {
     const mintAmount = BigNumber.from(10).pow(18).mul(100);
     beforeEach(async function () {
       await rewardsToken.connect(rewardsDistributer).freeMint(mintAmount);
@@ -402,13 +402,13 @@ describe("StakingRewards", function () {
       });
     });
 
-    xdescribe("Multiple stakers", async function () {
+    describe("Multiple stakers", async function () {
       it("Equal two stakes divides rewards evenly", async function () {
         await stakingContract.connect(staker1).stake(oneToken);
         await stakingContract.connect(staker2).stake(oneToken);
 
         await sendRewards(twoTokens);
-        await timeTravelDays(7);
+        await timeTravelDays(8);
 
         const earned1 = await stakingContract.earned(staker1.address);
         const earned2 = await stakingContract.earned(staker2.address);
@@ -425,7 +425,7 @@ describe("StakingRewards", function () {
         await stakingContract.connect(staker2).stake(twoTokens);
 
         await sendRewards(twoTokens);
-        await timeTravelDays(7);
+        await timeTravelDays(8);
 
         const earned1 = await stakingContract.earned(staker1.address);
         const earned2 = await stakingContract.earned(staker2.address);
@@ -434,19 +434,27 @@ describe("StakingRewards", function () {
       });
 
       it("Inequal two stakes divides rewards fairly, staking at middle", async function () {
+        // First staker enters at the beginning and stakes until halfway of the staking period
         await stakingContract.connect(staker1).stake(oneToken);
 
         await sendRewards(twoTokens);
-        await timeTravelDays(1);
+        await timeTravelDays(4);
 
+        // Second staker starts with the same stake amount
         await stakingContract.connect(staker2).stake(oneToken);
 
-        await timeTravelDays(8);
+        await timeTravelDays(4);
 
         const earned1 = await stakingContract.earned(staker1.address);
         const earned2 = await stakingContract.earned(staker2.address);
 
-        expect(earned2).to.equal(earned1.mul(7));
+        // A lot more calculations requires a lot larger error tolerance.
+        // Rrror tolerance of about 0,0001%.
+        const tolerance = twoTokens.div(1000000);
+
+        // First should get about 3/4 of the total rewards
+        expect(earned1).to.be.approximately(twoTokens.div(4).mul(3), tolerance);
+        expect(earned2.mul(3)).to.be.approximately(earned1, tolerance.mul(10));
       });
     });
   });
