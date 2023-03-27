@@ -103,7 +103,8 @@ The deploy script performes the following actions:
 Production deployment is quite similar to a testnet deployment, with the following changes:
 
 1. New environment settings (`.env` file) are needed for the new network
-1. Change the deployment parameters:
+1. New Hardhat settings
+1. Change the deployment parameters (in deployment script):
    1. Conversion contract address (`_rewardsDistribution`) can be left to be determined by the deployment, since deployment also deploys the conversion contract.
    1. Change the `_rewardsToken` parameter to be the wrapped native asset token. A wrapped native asset contract has to be deployed in the network by someone before deploying staking. The WETH contract included in this project IS NOT TO BE USED in production. Address to the wrapped native asset contract has to be provided in deployment parameters
    1. Change the `_stakingToken` parameter
