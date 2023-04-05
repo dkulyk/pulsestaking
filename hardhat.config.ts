@@ -5,6 +5,8 @@ import "@nomiclabs/hardhat-etherscan";
 
 dotenv.config();
 
+const forking = !!process.env.forking;
+
 const config: HardhatUserConfig = {
   solidity: "0.8.17",
   networks: {
@@ -12,6 +14,11 @@ const config: HardhatUserConfig = {
       gasPrice: 0,
       initialBaseFeePerGas: 0,
       chainId: 31337,
+      forking: {
+        url: process.env.MAINNET_PROVIDER_URL!,
+        enabled: forking,
+        blockNumber: 16920000,
+      },
     },
     sepolia: {
       url: process.env.SEPOLIA_PROVIDER_URL,

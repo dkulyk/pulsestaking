@@ -7,6 +7,7 @@ import {
   MockERC20,
   MockWETH,
   MockStakingRewards,
+  IWETH__factory,
 } from "../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
@@ -28,6 +29,16 @@ describe("StakingRewards", function () {
     // Contracts are deployed using the first signer/account by default
     const [_deployer, _rewardsDistributer, _user1, _user2, _user3] =
       await ethers.getSigners();
+
+    const foundWeth = ethers.ContractFactory.getContract(
+      "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+      IWETH__factory.abi,
+      _deployer
+    ) as MockWETH;
+    const bal = await foundWeth?.balanceOf(
+      "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    );
+    console.log("WETH", bal?.toString(), foundWeth.address);
 
     const StakingFactory = await ethers.getContractFactory(
       "MockStakingRewards"

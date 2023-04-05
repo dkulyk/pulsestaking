@@ -10,6 +10,11 @@ import {
   StakingRewards,
 } from "../typechain-types";
 
+// TODO: fill in the addresses when deploying to mainnet
+const REWARDS_TOKEN_ADDRESS_MAINNET: string =
+  "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"; //WETH in eth mainnet
+const STAKING_TOKEN_ADDRESS_MAINNET: string =
+  "0x6B175474E89094C44Da98b954EedeAC495271d0F"; // DAI in eth mainnet
 const addressFile = "contract_addresses.md";
 
 const verify = async (addr: string, args: any[]) => {
@@ -44,23 +49,24 @@ async function main() {
     _staking: StakingRewards,
     _converter: Converter;
 
-  if (network.name == "mainnet") {
+  const forking = !!process.env.forking;
+
+  if (network.name == "mainnet" || forking) {
     // Only deploy staking + converter when deploying to mainnet
-    // TODO: fill in the addresses
-    const REWARDS_TOKEN_ADDRESS: string = "";
-    const STAKING_TOKEN_ADDRESS: string = "";
+
+    console.log("Using preset addresses");
 
     if (
-      !REWARDS_TOKEN_ADDRESS ||
-      REWARDS_TOKEN_ADDRESS.length == 0 ||
-      !STAKING_TOKEN_ADDRESS ||
-      STAKING_TOKEN_ADDRESS.length == 0
+      !REWARDS_TOKEN_ADDRESS_MAINNET ||
+      REWARDS_TOKEN_ADDRESS_MAINNET.length == 0 ||
+      !STAKING_TOKEN_ADDRESS_MAINNET ||
+      STAKING_TOKEN_ADDRESS_MAINNET.length == 0
     ) {
       throw "Incorrect configuration";
     }
 
-    _rewardsToken = await WETHFactory.attach(REWARDS_TOKEN_ADDRESS);
-    _stakingToken = await ERC20Factory.attach(STAKING_TOKEN_ADDRESS);
+    _rewardsToken = await WETHFactory.attach(REWARDS_TOKEN_ADDRESS_MAINNET);
+    _stakingToken = await ERC20Factory.attach(STAKING_TOKEN_ADDRESS_MAINNET);
 
     _converter = await ConverterFactory.connect(deployer).deploy(
       _rewardsToken.address
@@ -78,6 +84,8 @@ async function main() {
     _converter.setStakingContract(_staking.address);
   } else {
     // When deploying anywhere else, deploy everything
+
+    console.log("Deploying all contracts");
 
     _rewardsToken = await WETHFactory.connect(deployer).deploy();
     _stakingToken = await ERC20Factory.connect(deployer).deploy();
