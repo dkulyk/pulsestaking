@@ -12,13 +12,4 @@ contract MockStakingRewards is StakingRewards {
         address _stakingToken,
         address _xenToken
     ) StakingRewards(_rewardsDistribution, _stakingToken, _xenToken) {}
-
-    /**
-     * @notice Change the staking period duration. Only use when no active staking period
-     * @param newDays New duration of the staking period, in days
-     */
-    function changeStakingPeriod(uint256 newDays) public {
-        uint256 inSeconds = newDays * 60 * 60 * 24;
-        rewardsDuration = inSeconds;
-    }
 }

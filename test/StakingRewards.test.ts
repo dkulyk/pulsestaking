@@ -47,7 +47,7 @@ describe("StakingRewards", function () {
     await _staking.deployed();
 
     const _stakingContr: MockStakingRewards = _staking;
-    await _stakingContr.changeStakingPeriod(8);
+    //await _stakingContr.changeStakingPeriod(8);
 
     return {
       _deployer,
@@ -440,12 +440,12 @@ describe("StakingRewards", function () {
         await stakingContract.connect(staker1).stake(oneToken);
 
         await sendRewards(twoTokens);
-        await timeTravelDays(4);
+        await timeTravelDays(3.5);
 
         // Second staker starts with the same stake amount
         await stakingContract.connect(staker2).stake(oneToken);
 
-        await timeTravelDays(4);
+        await timeTravelDays(3.5);
 
         const earned1 = await stakingContract.earned(staker1.address);
         const earned2 = await stakingContract.earned(staker2.address);
@@ -464,12 +464,12 @@ describe("StakingRewards", function () {
         await stakingContract.connect(staker2).stake(oneToken);
 
         await sendRewards(twoTokens);
-        await timeTravelDays(4);
+        await timeTravelDays(3.5);
 
         // Second staker withdraws stake
         await stakingContract.connect(staker2).withdraw(oneToken);
 
-        await timeTravelDays(4);
+        await timeTravelDays(3.5);
 
         const earned1 = await stakingContract.earned(staker1.address);
         const earned2 = await stakingContract.earned(staker2.address);
