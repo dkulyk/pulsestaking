@@ -3,10 +3,8 @@ import { expect } from "chai";
 import { ethers, network } from "hardhat";
 import {
   ERC20,
-  IWETH,
   MockERC20,
-  MockWETH,
-  MockStakingRewards,
+  MockStakingRewards, MockXEN,
 } from "../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
@@ -14,7 +12,7 @@ import { BigNumber } from "ethers";
 describe("StakingRewards", function () {
   let stakingContract: MockStakingRewards;
   let stakingToken: MockERC20;
-  let rewardsToken: MockWETH;
+  let xenToken: MockXEN;
   let rewardsDistributer: SignerWithAddress;
   let staker1: SignerWithAddress;
   let staker2: SignerWithAddress;
@@ -32,19 +30,19 @@ describe("StakingRewards", function () {
     const StakingFactory = await ethers.getContractFactory(
       "MockStakingRewards"
     );
+    const XENFactory = await ethers.getContractFactory("MockXEN");
     const ERC20Factory = await ethers.getContractFactory("MockERC20");
-    const WETHFactory = await ethers.getContractFactory("MockWETH");
 
-    const _rewardsToken = await WETHFactory.connect(_deployer).deploy();
+    const _xenToken = await XENFactory.connect(_deployer).deploy();
     const _stakingToken = await ERC20Factory.connect(_deployer).deploy();
 
     const _staking = await StakingFactory.connect(_deployer).deploy(
       _rewardsDistributer.address,
-      _rewardsToken.address,
-      _stakingToken.address
+      _stakingToken.address,
+      _xenToken.address,
     );
 
-    await _rewardsToken.deployed();
+    await _xenToken.deployed();
     await _stakingToken.deployed();
     await _staking.deployed();
 
@@ -57,7 +55,7 @@ describe("StakingRewards", function () {
       _user1,
       _user2,
       _user3,
-      _rewardsToken,
+      _xenToken,
       _stakingToken,
       _staking,
     };
@@ -70,7 +68,7 @@ describe("StakingRewards", function () {
       _user1,
       _user2,
       _user3,
-      _rewardsToken,
+      _xenToken,
       _stakingToken,
       _staking,
     } = await loadFixture(deployStakingFixture);
@@ -79,7 +77,7 @@ describe("StakingRewards", function () {
     staker1 = _user1;
     staker2 = _user2;
     staker3 = _user3;
-    rewardsToken = _rewardsToken;
+    xenToken = _xenToken;
     stakingToken = _stakingToken;
     stakingContract = _staking;
   });
@@ -89,27 +87,27 @@ describe("StakingRewards", function () {
       const setRewardsDistribution =
         await stakingContract.rewardsDistribution();
       const setStaking = await stakingContract.stakingToken();
-      const setRewards = await stakingContract.rewardsToken();
+      const setXenToken = await stakingContract.xenToken();
 
       expect(setRewardsDistribution).to.equal(rewardsDistributer.address);
       expect(setStaking).to.equal(stakingToken.address);
-      expect(setRewards).to.equal(rewardsToken.address);
+      expect(setXenToken).to.equal(xenToken.address);
     });
   });
 
   describe("Send rewards", async function () {
     const mintAmount = BigNumber.from(10).pow(18).mul(100);
     beforeEach(async function () {
-      await rewardsToken.connect(rewardsDistributer).freeMint(mintAmount);
+      await stakingToken.connect(rewardsDistributer).freeMint(mintAmount);
     });
 
     it("Works", async function () {
-      await rewardsToken
+      await stakingToken
         .connect(rewardsDistributer)
         .transfer(stakingContract.address, 1);
       await stakingContract.connect(rewardsDistributer).notifyRewardAmount(1);
 
-      const stakingBalance = await rewardsToken.balanceOf(
+      const stakingBalance = await stakingToken.balanceOf(
         stakingContract.address
       );
 
@@ -117,25 +115,25 @@ describe("StakingRewards", function () {
     });
 
     it("Works for subsequent calls", async function () {
-      const balanceBefore = await rewardsToken.balanceOf(
+      const balanceBefore = await stakingToken.balanceOf(
         stakingContract.address
       );
 
-      await rewardsToken
+      await stakingToken
         .connect(rewardsDistributer)
         .transfer(stakingContract.address, 1);
       await stakingContract.connect(rewardsDistributer).notifyRewardAmount(1);
 
-      const balanceMiddle = await rewardsToken.balanceOf(
+      const balanceMiddle = await stakingToken.balanceOf(
         stakingContract.address
       );
 
-      await rewardsToken
+      await stakingToken
         .connect(rewardsDistributer)
         .transfer(stakingContract.address, 2);
       await stakingContract.connect(rewardsDistributer).notifyRewardAmount(2);
 
-      const balanceAfter = await rewardsToken.balanceOf(
+      const balanceAfter = await stakingToken.balanceOf(
         stakingContract.address
       );
 
@@ -147,7 +145,7 @@ describe("StakingRewards", function () {
     it("Sets timestamp", async function () {
       const periodFinishBefore = await stakingContract.periodFinish();
 
-      await rewardsToken
+      await stakingToken
         .connect(rewardsDistributer)
         .transfer(stakingContract.address, 1);
       await stakingContract.connect(rewardsDistributer).notifyRewardAmount(1);
@@ -160,14 +158,14 @@ describe("StakingRewards", function () {
     it("Updates timestamp for subsequent calls", async function () {
       const periodFinishBefore = await stakingContract.periodFinish();
 
-      await rewardsToken
+      await stakingToken
         .connect(rewardsDistributer)
         .transfer(stakingContract.address, 1);
       await stakingContract.connect(rewardsDistributer).notifyRewardAmount(1);
 
       const periodFinishMiddle = await stakingContract.periodFinish();
 
-      await rewardsToken
+      await stakingToken
         .connect(rewardsDistributer)
         .transfer(stakingContract.address, 2);
       await stakingContract.connect(rewardsDistributer).notifyRewardAmount(2);
@@ -179,7 +177,7 @@ describe("StakingRewards", function () {
     });
 
     it("Possibly to only notify part of the token balance", async function () {
-      await rewardsToken
+      await stakingToken
         .connect(rewardsDistributer)
         .transfer(stakingContract.address, mintAmount);
       await stakingContract
@@ -189,7 +187,7 @@ describe("StakingRewards", function () {
       const rewardsDuration = await stakingContract.rewardsDuration();
       const rewardRate = await stakingContract.rewardRate();
 
-      const stakingBalance = await rewardsToken.balanceOf(
+      const stakingBalance = await stakingToken.balanceOf(
         stakingContract.address
       );
 
@@ -200,12 +198,12 @@ describe("StakingRewards", function () {
     });
 
     it("Empty reward updates the timestamp", async function () {
-      await rewardsToken
+      await stakingToken
         .connect(rewardsDistributer)
         .transfer(stakingContract.address, 0);
       await stakingContract.connect(rewardsDistributer).notifyRewardAmount(0);
 
-      const stakingBalance = await rewardsToken.balanceOf(
+      const stakingBalance = await stakingToken.balanceOf(
         stakingContract.address
       );
       const periodFinish = await stakingContract.periodFinish();
@@ -238,7 +236,7 @@ describe("StakingRewards", function () {
       await prepareTokens(staker2);
       await prepareTokens(staker3);
 
-      await rewardsToken.connect(rewardsDistributer).freeMint(amount);
+      await stakingToken.connect(rewardsDistributer).freeMint(amount);
     });
 
     describe("One staker", async function () {
@@ -289,14 +287,13 @@ describe("StakingRewards", function () {
         const balanceAfter = await stakingToken.balanceOf(staker1.address);
 
         const earned = await stakingContract.earned(staker1.address);
-
         expect(earned).to.be.approximately(twoTokens, errorTolerance);
         expect(balanceBefore).to.equal(balanceAfter);
       });
 
       it("Can withdraw rewards", async function () {
-        const balanceBefore = await rewardsToken.balanceOf(staker1.address);
         await stakingContract.connect(staker1).stake(oneToken);
+        const balanceBeforeReward = await stakingToken.balanceOf(staker1.address);
 
         await sendRewards(twoTokens);
         await timeTravelDays(8);
@@ -305,10 +302,10 @@ describe("StakingRewards", function () {
 
         await stakingContract.connect(staker1).getReward();
 
-        const balanceAfter = await rewardsToken.balanceOf(staker1.address);
+        const balanceAfter = await stakingToken.balanceOf(staker1.address);
 
         expect(earned).to.be.approximately(twoTokens, errorTolerance);
-        expect(balanceAfter.sub(balanceBefore)).to.equal(earned);
+        expect(balanceAfter.sub(balanceBeforeReward)).to.equal(earned);
       });
 
       it("Rewards don't disappear after staking period", async function () {
@@ -496,7 +493,7 @@ TokenStored: ${rewardPerTokenStored.toString()}, Rewards: ${rewards.toString()}`
   };
 
   const sendRewards = async (amount: BigNumber) => {
-    await rewardsToken
+    await stakingToken
       .connect(rewardsDistributer)
       .transfer(stakingContract.address, amount);
     await stakingContract
