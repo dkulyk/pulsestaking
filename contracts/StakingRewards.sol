@@ -19,10 +19,6 @@ contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistribution
     /* ========== STATE VARIABLES ========== */
 
     /**
-     * @notice Token to be used for the rewards
-     */
-    IERC20 public rewardsToken;
-    /**
      * @notice Token to be used for staking
      */
     IERC20 public stakingToken;
@@ -41,18 +37,22 @@ contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistribution
      * @notice At which timestamp the current staking period ends
      */
     uint256 public periodFinish = 0;
+
     /**
      * @notice How many reward tokens to reward per second per staked token
      */
     uint256 public rewardRate = 0;
+
     /**
      * @notice Duration of the staking period
      */
     uint256 public rewardsDuration = 7 days;
+
     /**
      * @notice When were rewards input the last time
      */
     uint256 public lastUpdateTime;
+
     /**
      * @notice Previous reward rate
      */
@@ -62,6 +62,7 @@ contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistribution
      * @notice How many tokens have already been paid to the user
      */
     mapping(address => uint256) public userRewardPerTokenPaid;
+
     /**
      * @notice How much rewards the address should get
      */
@@ -71,6 +72,7 @@ contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistribution
      * @notice How many tokens have been staked in total
      */
     uint256 private _totalSupply;
+
     /**
      * @notice How much each address has staked
      */
@@ -81,16 +83,14 @@ contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistribution
     /**
      * @dev Called when the contract is being deployed
      * @param _rewardsDistribution The address which is allowed to send rewards
-     * @param _rewardsToken Token to be used as rewards
      * @param _stakingToken Token to be staked in the contract
+     * @param _xenToken Address of the XEN token
      */
     constructor(
         address _rewardsDistribution,
-        address _rewardsToken,
         address _stakingToken,
         address _xenToken
     ) RewardsDistributionRecipient(_rewardsDistribution) {
-        rewardsToken = IERC20(_rewardsToken);
         stakingToken = IERC20(_stakingToken);
         xenToken = _xenToken;
     }
@@ -199,7 +199,7 @@ contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistribution
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            rewardsToken.safeTransfer(msg.sender, reward);
+            stakingToken.safeTransfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward);
         }
     }
@@ -236,9 +236,9 @@ contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistribution
         // This keeps the reward rate in the right range, preventing overflows due to
         // very high values of rewardRate in the earned and rewardsPerToken functions;
         // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
-        uint balance = rewardsToken.balanceOf(address(this));
+        uint rewardBalance = stakingToken.balanceOf(address(this)) - _totalSupply;
         require(
-            rewardRate <= balance / rewardsDuration,
+            rewardRate <= rewardBalance / rewardsDuration,
             "Provided reward too high"
         );
 

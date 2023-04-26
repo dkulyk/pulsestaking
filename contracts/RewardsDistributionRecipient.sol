@@ -5,7 +5,7 @@ pragma solidity ^0.8.17;
  * @notice An abstract contract to define functionality for reward distributer
  */
 abstract contract RewardsDistributionRecipient {
-    address immutable rewardsDistribution;
+    address public immutable rewardsDistribution;
 
     constructor(address _rewardsDistribution) {
         rewardsDistribution = _rewardsDistribution;
