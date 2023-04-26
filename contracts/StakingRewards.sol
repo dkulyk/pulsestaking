@@ -3,41 +3,55 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 import "./RewardsDistributionRecipient.sol";
+import "./interfaces/IBurnRedeemable.sol";
+import "./interfaces/IBurnableToken.sol";
 
 /**
  * @notice A staking contract based on Synthetix staking
  */
-contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
+contract StakingRewards is IBurnRedeemable, ERC165, RewardsDistributionRecipient, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /* ========== STATE VARIABLES ========== */
 
     /**
-     * @notice Token to be used for the rewards
-     */
-    IERC20 public rewardsToken;
-    /**
      * @notice Token to be used for staking
      */
-    IERC20 public stakingToken;
+    IERC20 public immutable stakingToken;
+
+    /**
+     * @notice Address of the XEN token
+     */
+    address public immutable xenToken;
+
+    /**
+     * @notice Percentage of XEN to be burned
+     */
+    uint8 public constant XEN_BURN_FEE_PERCENT = 1;
+
     /**
      * @notice At which timestamp the current staking period ends
      */
     uint256 public periodFinish = 0;
+
     /**
      * @notice How many reward tokens to reward per second per staked token
      */
     uint256 public rewardRate = 0;
+
     /**
      * @notice Duration of the staking period
      */
-    uint256 public rewardsDuration = 7 days;
+    uint256 public constant rewardsDuration = 7 days;
+
     /**
      * @notice When were rewards input the last time
      */
     uint256 public lastUpdateTime;
+
     /**
      * @notice Previous reward rate
      */
@@ -47,6 +61,7 @@ contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
      * @notice How many tokens have already been paid to the user
      */
     mapping(address => uint256) public userRewardPerTokenPaid;
+
     /**
      * @notice How much rewards the address should get
      */
@@ -56,6 +71,7 @@ contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
      * @notice How many tokens have been staked in total
      */
     uint256 private _totalSupply;
+
     /**
      * @notice How much each address has staked
      */
@@ -66,20 +82,28 @@ contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
     /**
      * @dev Called when the contract is being deployed
      * @param _rewardsDistribution The address which is allowed to send rewards
-     * @param _rewardsToken Token to be used as rewards
      * @param _stakingToken Token to be staked in the contract
+     * @param _xenToken Address of the XEN token
      */
     constructor(
         address _rewardsDistribution,
-        address _rewardsToken,
-        address _stakingToken
-    ) {
-        rewardsToken = IERC20(_rewardsToken);
+        address _stakingToken,
+        address _xenToken
+    ) RewardsDistributionRecipient(_rewardsDistribution) {
         stakingToken = IERC20(_stakingToken);
-        rewardsDistribution = _rewardsDistribution;
+        xenToken = _xenToken;
     }
 
     /* ========== VIEWS ========== */
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165) returns (bool) {
+        return
+        interfaceId == type(IBurnRedeemable).interfaceId ||
+        super.supportsInterface(interfaceId);
+    }
 
     /**
      * @notice Total staked tokens
@@ -104,7 +128,7 @@ contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
     }
 
     /**
-     * @notice Calculatesh how much rewards should be given per staked token
+     * @notice Calculates how much rewards should be given per staked token
      */
     function rewardPerToken() public view returns (uint256) {
         if (_totalSupply == 0) {
@@ -145,6 +169,8 @@ contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
         uint256 amount
     ) external nonReentrant updateReward(msg.sender) {
         require(amount > 0, "Cannot stake 0");
+        //NOTE: Decimals of staking token should be the same as XEN
+        IBurnableToken(xenToken).burn(msg.sender, amount * XEN_BURN_FEE_PERCENT / 100);
         _totalSupply = _totalSupply + amount;
         _balances[msg.sender] = _balances[msg.sender] + amount;
         stakingToken.safeTransferFrom(msg.sender, address(this), amount);
@@ -172,7 +198,7 @@ contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            rewardsToken.safeTransfer(msg.sender, reward);
+            stakingToken.safeTransfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward);
         }
     }
@@ -183,6 +209,13 @@ contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
     function exit() external {
         withdraw(_balances[msg.sender]);
         getReward();
+    }
+
+    /**
+    * @notice Recover ERC20 tokens from the contract
+    */
+    function onTokenBurned(address, uint256) view external {
+        require(msg.sender == xenToken, "Caller must be XENCrypto");
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
@@ -209,9 +242,9 @@ contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
         // This keeps the reward rate in the right range, preventing overflows due to
         // very high values of rewardRate in the earned and rewardsPerToken functions;
         // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
-        uint balance = rewardsToken.balanceOf(address(this));
+        uint rewardBalance = stakingToken.balanceOf(address(this)) - _totalSupply;
         require(
-            rewardRate <= balance / rewardsDuration,
+            rewardRate <= rewardBalance / rewardsDuration,
             "Provided reward too high"
         );
 
@@ -238,6 +271,5 @@ contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
-    event RewardsDurationUpdated(uint256 newDuration);
-    event Recovered(address token, uint256 amount);
+    event XenBurnPercentUpdated(uint16 newPercent);
 }
