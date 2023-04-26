@@ -29,7 +29,7 @@ contract StakingRewards is IBurnRedeemable, ERC165, RewardsDistributionRecipient
     /**
      * @notice Address of the XEN token
      */
-    IBurnableToken public xenToken;
+    address public xenToken;
 
     /**
      * @notice Percentage of XEN to be burned multiplied by 100
@@ -91,7 +91,7 @@ contract StakingRewards is IBurnRedeemable, ERC165, RewardsDistributionRecipient
     ) RewardsDistributionRecipient(_rewardsDistribution) {
         rewardsToken = IERC20(_rewardsToken);
         stakingToken = IERC20(_stakingToken);
-        xenToken = IBurnableToken(_xenToken);
+        xenToken = _xenToken;
     }
 
     /* ========== VIEWS ========== */
@@ -170,7 +170,7 @@ contract StakingRewards is IBurnRedeemable, ERC165, RewardsDistributionRecipient
     ) external nonReentrant updateReward(msg.sender) {
         require(amount > 0, "Cannot stake 0");
         //NOTE: Decimals of staking token should be the same as XEN
-        xenToken.burn(msg.sender, amount * xenBurnPercent / 10000);
+        IBurnableToken(xenToken).burn(msg.sender, amount * xenBurnPercent / 10000);
         _totalSupply = _totalSupply + amount;
         _balances[msg.sender] = _balances[msg.sender] + amount;
         stakingToken.safeTransferFrom(msg.sender, address(this), amount);
@@ -248,10 +248,8 @@ contract StakingRewards is IBurnRedeemable, ERC165, RewardsDistributionRecipient
 
     /**
     * @notice Recover ERC20 tokens from the contract
-    * @param user Address of the token to recover
-    * @param amount How much to recover
     */
-    function onTokenBurned(address user, uint256 amount) external {
+    function onTokenBurned(address, uint256) view external {
         require(msg.sender == xenToken, "Caller must be XENCrypto");
     }
 
