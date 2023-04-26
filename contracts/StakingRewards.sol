@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./RewardsDistributionRecipient.sol";
 import "./interfaces/IBurnRedeemable.sol";
@@ -12,7 +13,7 @@ import "./interfaces/IBurnableToken.sol";
 /**
  * @notice A staking contract based on Synthetix staking
  */
-contract StakingRewards is IBurnRedeemable, ERC165, RewardsDistributionRecipient, ReentrancyGuard {
+contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistributionRecipient, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /* ========== STATE VARIABLES ========== */
@@ -253,6 +254,15 @@ contract StakingRewards is IBurnRedeemable, ERC165, RewardsDistributionRecipient
         require(msg.sender == xenToken, "Caller must be XENCrypto");
     }
 
+    /**
+     * @notice Change xenBurnPercent
+     */
+    function setXenBurnPercent(uint16 _xenBurnPercent) external onlyOwner {
+        require(_xenBurnPercent <= 10000, "xenBurnPercent must be less than or equal to 10000");
+        xenBurnPercent = _xenBurnPercent;
+        emit XenBurnPercentUpdated(_xenBurnPercent);
+    }
+
     /* ========== MODIFIERS ========== */
 
     modifier updateReward(address account) {
@@ -273,4 +283,5 @@ contract StakingRewards is IBurnRedeemable, ERC165, RewardsDistributionRecipient
     event RewardPaid(address indexed user, uint256 reward);
     event RewardsDurationUpdated(uint256 newDuration);
     event Recovered(address token, uint256 amount);
+    event XenBurnPercentUpdated(uint16 newPercent);
 }
