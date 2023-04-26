@@ -4,7 +4,6 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./RewardsDistributionRecipient.sol";
 import "./interfaces/IBurnRedeemable.sol";
@@ -13,7 +12,7 @@ import "./interfaces/IBurnableToken.sol";
 /**
  * @notice A staking contract based on Synthetix staking
  */
-contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistributionRecipient, ReentrancyGuard {
+contract StakingRewards is IBurnRedeemable, ERC165, RewardsDistributionRecipient, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /* ========== STATE VARIABLES ========== */
@@ -21,17 +20,17 @@ contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistribution
     /**
      * @notice Token to be used for staking
      */
-    IERC20 public stakingToken;
+    IERC20 public immutable stakingToken;
 
     /**
      * @notice Address of the XEN token
      */
-    address public xenToken;
+    address public immutable xenToken;
 
     /**
-     * @notice Percentage of XEN to be burned multiplied by 100
+     * @notice Percentage of XEN to be burned
      */
-    uint16 public xenBurnPercent = 100;
+    uint8 public constant XEN_BURN_FEE_PERCENT = 1;
 
     /**
      * @notice At which timestamp the current staking period ends
@@ -46,7 +45,7 @@ contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistribution
     /**
      * @notice Duration of the staking period
      */
-    uint256 public rewardsDuration = 7 days;
+    uint256 public constant rewardsDuration = 7 days;
 
     /**
      * @notice When were rewards input the last time
@@ -129,17 +128,17 @@ contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistribution
     }
 
     /**
-     * @notice Calculatesh how much rewards should be given per staked token
+     * @notice Calculates how much rewards should be given per staked token
      */
     function rewardPerToken() public view returns (uint256) {
         if (_totalSupply == 0) {
             return rewardPerTokenStored;
         }
         return
-        rewardPerTokenStored +
-        (((lastTimeRewardApplicable() - lastUpdateTime) *
-        rewardRate *
-        1e18) / _totalSupply);
+            rewardPerTokenStored +
+            (((lastTimeRewardApplicable() - lastUpdateTime) *
+                rewardRate *
+                1e18) / _totalSupply);
     }
 
     /**
@@ -148,9 +147,9 @@ contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistribution
      */
     function earned(address account) public view returns (uint256) {
         return
-        ((_balances[account] *
-        (rewardPerToken() - userRewardPerTokenPaid[account])) / 1e18) +
-        rewards[account];
+            ((_balances[account] *
+                (rewardPerToken() - userRewardPerTokenPaid[account])) / 1e18) +
+            rewards[account];
     }
 
     /**
@@ -171,10 +170,7 @@ contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistribution
     ) external nonReentrant updateReward(msg.sender) {
         require(amount > 0, "Cannot stake 0");
         //NOTE: Decimals of staking token should be the same as XEN
-        uint256 xenBurnAmount = amount * xenBurnPercent / 10000;
-        if (xenBurnAmount > 0) {
-            IBurnableToken(xenToken).burn(msg.sender, xenBurnAmount);
-        }
+        IBurnableToken(xenToken).burn(msg.sender, amount * XEN_BURN_FEE_PERCENT / 100);
         _totalSupply = _totalSupply + amount;
         _balances[msg.sender] = _balances[msg.sender] + amount;
         stakingToken.safeTransferFrom(msg.sender, address(this), amount);
@@ -215,6 +211,13 @@ contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistribution
         getReward();
     }
 
+    /**
+    * @notice Recover ERC20 tokens from the contract
+    */
+    function onTokenBurned(address, uint256) view external {
+        require(msg.sender == xenToken, "Caller must be XENCrypto");
+    }
+
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     /**
@@ -250,22 +253,6 @@ contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistribution
         emit RewardAdded(reward);
     }
 
-    /**
-    * @notice Recover ERC20 tokens from the contract
-    */
-    function onTokenBurned(address, uint256) view external {
-        require(msg.sender == xenToken, "Caller must be XENCrypto");
-    }
-
-    /**
-     * @notice Change xenBurnPercent
-     */
-    function setXenBurnPercent(uint16 _xenBurnPercent) external onlyOwner {
-        require(_xenBurnPercent <= 10000, "xenBurnPercent must be less than or equal to 10000");
-        xenBurnPercent = _xenBurnPercent;
-        emit XenBurnPercentUpdated(_xenBurnPercent);
-    }
-
     /* ========== MODIFIERS ========== */
 
     modifier updateReward(address account) {
@@ -284,7 +271,5 @@ contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistribution
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
-    event RewardsDurationUpdated(uint256 newDuration);
-    event Recovered(address token, uint256 amount);
     event XenBurnPercentUpdated(uint16 newPercent);
 }
