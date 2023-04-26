@@ -254,6 +254,14 @@ describe("StakingRewards", function () {
         expect(balance).to.equal(oneToken);
       });
 
+      it("XEN burned right amount", async function () {
+        await stakingContract.connect(staker1).stake(oneToken);
+
+        const burned = await xenToken.connect(staker1).burnedBy(staker1.address);
+
+        expect(burned).to.equal(oneToken.div(100));
+      });
+
       it("Staking without rewards gives nothing", async function () {
         await stakingContract.connect(staker1).stake(oneToken);
 
