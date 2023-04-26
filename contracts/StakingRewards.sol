@@ -136,10 +136,10 @@ contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistribution
             return rewardPerTokenStored;
         }
         return
-            rewardPerTokenStored +
-            (((lastTimeRewardApplicable() - lastUpdateTime) *
-                rewardRate *
-                1e18) / _totalSupply);
+        rewardPerTokenStored +
+        (((lastTimeRewardApplicable() - lastUpdateTime) *
+        rewardRate *
+        1e18) / _totalSupply);
     }
 
     /**
@@ -148,9 +148,9 @@ contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistribution
      */
     function earned(address account) public view returns (uint256) {
         return
-            ((_balances[account] *
-                (rewardPerToken() - userRewardPerTokenPaid[account])) / 1e18) +
-            rewards[account];
+        ((_balances[account] *
+        (rewardPerToken() - userRewardPerTokenPaid[account])) / 1e18) +
+        rewards[account];
     }
 
     /**
@@ -171,7 +171,10 @@ contract StakingRewards is IBurnRedeemable, ERC165, Ownable, RewardsDistribution
     ) external nonReentrant updateReward(msg.sender) {
         require(amount > 0, "Cannot stake 0");
         //NOTE: Decimals of staking token should be the same as XEN
-        IBurnableToken(xenToken).burn(msg.sender, amount * xenBurnPercent / 10000);
+        uint256 xenBurnAmount = amount * xenBurnPercent / 10000;
+        if (xenBurnAmount > 0) {
+            IBurnableToken(xenToken).burn(msg.sender, xenBurnAmount);
+        }
         _totalSupply = _totalSupply + amount;
         _balances[msg.sender] = _balances[msg.sender] + amount;
         stakingToken.safeTransferFrom(msg.sender, address(this), amount);
