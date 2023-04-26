@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 import "./RewardsDistributionRecipient.sol";
 import "./interfaces/IBurnRedeemable.sol";
+import "./interfaces/IBurnableToken.sol";
 
 /**
  * @notice A staking contract based on Synthetix staking
@@ -24,6 +25,17 @@ contract StakingRewards is IBurnRedeemable, ERC165, RewardsDistributionRecipient
      * @notice Token to be used for staking
      */
     IERC20 public stakingToken;
+
+    /**
+     * @notice Address of the XEN token
+     */
+    IBurnableToken public xenToken;
+
+    /**
+     * @notice Percentage of XEN to be burned multiplied by 100
+     */
+    uint16 public xenBurnPercent = 100;
+
     /**
      * @notice At which timestamp the current staking period ends
      */
@@ -74,10 +86,12 @@ contract StakingRewards is IBurnRedeemable, ERC165, RewardsDistributionRecipient
     constructor(
         address _rewardsDistribution,
         address _rewardsToken,
-        address _stakingToken
+        address _stakingToken,
+        address _xenToken
     ) RewardsDistributionRecipient(_rewardsDistribution) {
         rewardsToken = IERC20(_rewardsToken);
         stakingToken = IERC20(_stakingToken);
+        xenToken = IBurnableToken(_xenToken);
     }
 
     /* ========== VIEWS ========== */
@@ -155,6 +169,8 @@ contract StakingRewards is IBurnRedeemable, ERC165, RewardsDistributionRecipient
         uint256 amount
     ) external nonReentrant updateReward(msg.sender) {
         require(amount > 0, "Cannot stake 0");
+        //NOTE: Decimals of staking token should be the same as XEN
+        xenToken.burn(msg.sender, amount * xenBurnPercent / 10000);
         _totalSupply = _totalSupply + amount;
         _balances[msg.sender] = _balances[msg.sender] + amount;
         stakingToken.safeTransferFrom(msg.sender, address(this), amount);
@@ -236,6 +252,7 @@ contract StakingRewards is IBurnRedeemable, ERC165, RewardsDistributionRecipient
     * @param amount How much to recover
     */
     function onTokenBurned(address user, uint256 amount) external {
+        require(msg.sender == xenToken, "Caller must be XENCrypto");
     }
 
     /* ========== MODIFIERS ========== */

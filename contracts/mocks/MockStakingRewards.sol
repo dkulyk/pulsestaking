@@ -10,8 +10,9 @@ contract MockStakingRewards is StakingRewards {
     constructor(
         address _rewardsDistribution,
         address _rewardsToken,
-        address _stakingToken
-    ) StakingRewards(_rewardsDistribution, _rewardsToken, _stakingToken) {}
+        address _stakingToken,
+        address _xenToken
+    ) StakingRewards(_rewardsDistribution, _rewardsToken, _stakingToken, _xenToken) {}
 
     /**
      * @notice Change the staking period duration. Only use when no active staking period
