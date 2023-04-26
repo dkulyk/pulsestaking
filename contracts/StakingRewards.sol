@@ -3,13 +3,15 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 import "./RewardsDistributionRecipient.sol";
+import "./interfaces/IBurnRedeemable.sol";
 
 /**
  * @notice A staking contract based on Synthetix staking
  */
-contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
+contract StakingRewards is IBurnRedeemable, ERC165, RewardsDistributionRecipient, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /* ========== STATE VARIABLES ========== */
@@ -79,6 +81,15 @@ contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
     }
 
     /* ========== VIEWS ========== */
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165) returns (bool) {
+        return
+        interfaceId == type(IBurnRedeemable).interfaceId ||
+        super.supportsInterface(interfaceId);
+    }
 
     /**
      * @notice Total staked tokens
@@ -217,6 +228,14 @@ contract StakingRewards is RewardsDistributionRecipient, ReentrancyGuard {
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp + rewardsDuration;
         emit RewardAdded(reward);
+    }
+
+    /**
+    * @notice Recover ERC20 tokens from the contract
+    * @param user Address of the token to recover
+    * @param amount How much to recover
+    */
+    function onTokenBurned(address user, uint256 amount) external {
     }
 
     /* ========== MODIFIERS ========== */
